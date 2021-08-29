@@ -11,7 +11,7 @@
 import os
 import re
 from numpy.core.numeric import NaN
-import yfinance as yf
+#import yfinance as yf
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import copy
 import pandas as pd
@@ -486,21 +486,21 @@ if __name__ == "__main__":
     #print(data)
     #test_df = data[-400:]
 #'''
-    lookback_window_size = 12
+    lookback_window_size = 15
     test_window = 3 * 30 # 30 days 
     train_df = df[:-test_window-lookback_window_size]
     #test_df = df[-test_window-lookback_window_size:]
-    test_df = df[-test_window:-test_window + 18]
+    test_df = df[-test_window:-test_window + 21]
     print(test_df)
     
 
     agent = CustomAgent(lookback_window_size=lookback_window_size, lr = 0.00001, epochs=5, optimizer=Adam, batch_size = 24, model="Dense")
     train_env = CustomEnv(train_df, lookback_window_size=lookback_window_size)
     #train_agent(train_env, agent, visualize=False, train_episodes=50000, training_batch_size=500)
-    #train_agent(train_env, agent, visualize=False, train_episodes=5000, training_batch_size=500)
+    train_agent(train_env, agent, visualize=False, train_episodes=5000, training_batch_size=500)
 
     #test_env = CustomEnv(test_df, lookback_window_size=lookback_window_size, Show_reward=True, Show_indicators=True)
     test_env = CustomEnv(test_df, lookback_window_size=lookback_window_size, Show_reward=True, Show_indicators=True)
-    test_agent(test_env, agent, visualize=False, test_episodes=100, folder="2021_08_29_12_12_Crypto_trader", name="1293.09_Crypto_trader", comment="")
+    test_agent(test_env, agent, visualize=False, test_episodes=100, folder="2021_08_29_17_54_Crypto_trader", name="1651.39_Crypto_trader", comment="")
     #Plot_OHCL(test_df)
 #'''

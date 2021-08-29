@@ -31,6 +31,11 @@ I have tested 8H and the results were not acceptable. The lookback window was 48
 I have witnessed that although I trained the newtork with the lookback set on 48 (6*8), the result were better
 when I decreased it to (5*8), but the decreasing it further (4*8) and increasing it, made the results worse.
 I saw that the prediction is better when we try to predict the dateframes near the final train date. As we go
-further, it become worse. In the meantime, decreasing the lookback from (15*8, the trained parameter) to (12*8)
+further, it become worse. 
+In the meantime, decreasing the lookback from (15*8, the trained parameter) to (12*8)
 made the prediction better.
+Ok, it is not reliable. in that particular model, decresing the lookback in the downtrend was
+destructive but, in the uptrend, it was improving the result.
+I changed the model to CNN-CNN, and in this configuration, changing the lookback is not 
+constructive.
 

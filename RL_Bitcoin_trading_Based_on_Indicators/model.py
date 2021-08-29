@@ -52,17 +52,17 @@ class Shared_Model:
         
         ## Critic model
         ### Dense Model
-        V = Dense(512, activation="relu")(X)
+        '''V = Dense(512, activation="relu")(X)
         V = Dense(256, activation="relu")(V)
-        V = Dense(64, activation="relu")(V)
+        V = Dense(64, activation="relu")(V)'''
         #value = Dense(1, activation=None)(V)
 
         ### LSTM Model
-        '''X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
-        X = LSTM(256, return_sequences=True, dropout=.2)(X)
+        X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
+        X = LSTM(256, return_sequences=True)(X)
         X = BatchNormalization()(X)
         X = Dense(256, activation="relu")(X)
-        X = LSTM(1)(X)'''
+        X = LSTM(1)(X)
 
         ### CNN Model
         '''X = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
@@ -74,7 +74,7 @@ class Shared_Model:
         ###
 
         value = Dense(1, activation=None)(X)
-        self.Critic = Model(inputs=X_input, outputs = value) # value --> X
+        self.Critic = Model(inputs=X_input, outputs = X) # value --> X
         self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(lr=lr))
 
         #######
