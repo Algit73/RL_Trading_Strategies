@@ -9,14 +9,14 @@
 #
 #================================================================
 import pandas as pd
-from ta.trend import SMAIndicator, macd, PSARIndicator
-from ta.volatility import BollingerBands
+from ta.trend import SMAIndicator, macd, PSARIndicator, cci
+from ta.volatility import BollingerBands, AverageTrueRange
 from ta.momentum import rsi
-from utils import Plot_OHCL
+#from utils import Plot_OHCL
 
 def AddIndicators(df):
     # Add Simple Moving Average (SMA) indicators
-    df["sma7"] = SMAIndicator(close=df["Close"], window=7, fillna=True).sma_indicator()
+    '''df["sma7"] = SMAIndicator(close=df["Close"], window=7, fillna=True).sma_indicator()
     df["sma25"] = SMAIndicator(close=df["Close"], window=25, fillna=True).sma_indicator()
     df["sma99"] = SMAIndicator(close=df["Close"], window=99, fillna=True).sma_indicator()
     
@@ -28,13 +28,21 @@ def AddIndicators(df):
 
     # Add Parabolic Stop and Reverse (Parabolic SAR) indicator
     indicator_psar = PSARIndicator(high=df["High"], low=df["Low"], close=df["Close"], step=0.02, max_step=2, fillna=True)
-    df['psar'] = indicator_psar.psar()
+    df['psar'] = indicator_psar.psar()'''
+
+    # Add Commodity Channel Index (CCI) indicator
+    #df['CCI'] = cci(high=df["High"], low=df["Low"], close=df["Close"])
+
+    # Add Average True Range (ATR) indicator
+    indicator_atr = AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"], fillna=True)
+    df['ATR'] = indicator_atr.average_true_range()
+
 
     # Add Moving Average Convergence Divergence (MACD) indicator
     df["MACD"] = macd(close=df["Close"], window_slow=26, window_fast=12, fillna=True) # mazas
 
     # Add Relative Strength Index (RSI) indicator
-    df["RSI"] = rsi(close=df["Close"], window=14, fillna=True) # mazas
+    #df["RSI"] = rsi(close=df["Close"], window=14, fillna=True) # mazas
     
     return df
 
@@ -45,4 +53,4 @@ if __name__ == "__main__":
 
     test_df = df[-400:]
 
-    Plot_OHCL(df)
+    #Plot_OHCL(df)

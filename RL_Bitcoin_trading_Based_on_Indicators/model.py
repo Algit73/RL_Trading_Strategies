@@ -11,8 +11,9 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization
+from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization, Dropout
 from tensorflow.keras import backend as K
+from tensorflow.python.keras.backend import dropout
 #tf.config.experimental_run_functions_eagerly(True) # used for debuging and development
 tf.compat.v1.disable_eager_execution() # usually using this for fastest performance
 
@@ -23,7 +24,7 @@ if len(gpus) > 0:
     except RuntimeError: pass
 
 class Shared_Model:
-    def __init__(self, input_shape, action_space, lr, optimizer, model="Dense"):
+    def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense"):
         X_input = Input(input_shape)
         self.action_space = action_space
 
@@ -49,20 +50,35 @@ class Shared_Model:
         else:
             X = Flatten()(X_input)
             X = Dense(512, activation="relu")(X)
+            
         
         ## Critic model
-        ### Dense Model
+        ### Dense Model + DropOut
+        
         '''V = Dense(512, activation="relu")(X)
         V = Dense(256, activation="relu")(V)
         V = Dense(64, activation="relu")(V)'''
+
+        ### Dense Model + DropOut
+        dropout_layer = Dropout(.2)
+        
+        V = dropout_layer(X)
+        V = Dense(512, activation="relu")(V)
+        V = dropout_layer(V)
+        V = Dense(512, activation="relu")(V)
+        V = dropout_layer(V)
+        V = Dense(256, activation="relu")(V)
+        V = dropout_layer(V)
+        V = Dense(64, activation="relu")(V)
+        V = dropout_layer(V)
         #value = Dense(1, activation=None)(V)
 
         ### LSTM Model
-        X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
+        '''X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
         X = LSTM(256, return_sequences=True)(X)
         X = BatchNormalization()(X)
         X = Dense(256, activation="relu")(X)
-        X = LSTM(1)(X)
+        X = LSTM(1)(X)'''
 
         ### CNN Model
         '''X = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
@@ -74,8 +90,8 @@ class Shared_Model:
         ###
 
         value = Dense(1, activation=None)(X)
-        self.Critic = Model(inputs=X_input, outputs = X) # value --> X
-        self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(lr=lr))
+        self.Critic = Model(inputs=X_input, outputs = value) # value --> X
+        self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(learning_rate=learning_rate))
 
         #######
 
@@ -85,6 +101,17 @@ class Shared_Model:
         A = Dense(256, activation="relu")(A)
         A = Dense(64, activation="relu")(A)'''
 
+        ### Dense Model + DropOut
+        A = dropout_layer(X)
+        A = Dense(512, activation="relu")(A)
+        A = dropout_layer(A)
+        A = Dense(512, activation="relu")(A)
+        A = dropout_layer(A)
+        A = Dense(256, activation="relu")(A)
+        A = dropout_layer(A)
+        A = Dense(64, activation="relu")(A)
+        A = dropout_layer(A)
+
         ### LSTM Model
         #TODO : Adding Dropout
         '''X = LSTM(512, return_sequences=True)(X_input)
@@ -93,16 +120,16 @@ class Shared_Model:
         X = LSTM(1)(X)'''
 
         ### CNN Model
-        X = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
-        X = MaxPooling1D(pool_size=2)(X)
-        X = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(X)
-        X = MaxPooling1D(pool_size=2)(X)
-        X = Flatten()(X)
+        '''A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        A = MaxPooling1D(pool_size=2)(A)
+        A = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(A)
+        A = MaxPooling1D(pool_size=2)(A)
+        A = Flatten()(A)'''
 
-        output = Dense(self.action_space, activation="softmax")(X) # A --> X
+        output = Dense(self.action_space, activation="softmax")(A) # A --> X
 
         self.Actor = Model(inputs = X_input, outputs = output) 
-        self.Actor.compile(loss=self.ppo_loss, optimizer=optimizer(lr=lr))
+        self.Actor.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
         #print(self.Actor.summary())
 
     def ppo_loss(self, y_true, y_pred):
