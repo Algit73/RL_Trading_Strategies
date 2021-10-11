@@ -1,0 +1,451 @@
+####
+Aug, 25
+##
+
+I trying to change the actor and critic model and make them different (not the same)
+In the 5m timeframe, things are wierd. Almost random. But most of the time, our trades are in loss.
+Yesterday, actor and critic where the same. Today, I changed them.
+I feel that in the combination where critic model was based on Dense and actor was CNN, results where better.
+Anyway, they were both unreliable. But, again, Dense-CNN where better in my eyes.
+In the meantime, this configuration was not suitable for the 1H timeframe. Daily profits were less than holding.
+
+####
+
+
+####
+Aug, 28
+##
+
+Testing 4H timeframe. Better than 1H and of course, 5m, but still far behind holding and considering the fact that
+we have not relized the fee inside each transaction.
+Now I want to change the lookback window, decrease it to 24H.
+
+####
+
+
+####
+Aug, 29
+##
+
+I have tested 8H and the results were not acceptable. The lookback window was 48H.
+I have witnessed that although I trained the newtork with the lookback set on 48 (6*8), the result were better
+when I decreased it to (5*8), but the decreasing it further (4*8) and increasing it, made the results worse.
+I saw that the prediction is better when we try to predict the dateframes near the final train date. As we go
+further, it become worse. 
+In the meantime, decreasing the lookback from (15*8, the trained parameter) to (12*8)
+made the prediction better.
+Ok, it is not reliable. in that particular model, decresing the lookback in the downtrend was
+destructive but, in the uptrend, it was improving the result.
+I changed the model to CNN-CNN, and in this configuration, changing the lookback is not 
+constructive.
+
+####
+
+
+####
+Aug, 30
+##
+
+Look! After a while, no no, from the beginning, the model approaches better results. After a while it becomes worse.
+It is weird!
+I've shifted to the Dense-CNN once again. 
+I have a guess, if I reduce the trading timeframe (from the one machine learned in), reducing the 
+lookback_window my improve the situation a bit. In the 12H timeframe, I cannot understand any meaningful
+difference.
+In the case where I put the start ahead of the trained dataset, redusing the lookback_window helped in some 
+cases. Maybe there is optimum point as the time goes on.
+I trained the machine once again, and this time I set the lookback_window to 12. Training stage showed better
+resluts but testing was not spectacular. In the meantime, I could not reduce the lookback_window beyond 12 (error).
+But, I increased the lookback_window and the resluts became better. Here, I moved toward in time and increasing
+lookback_window helped to achieve better results (not much, but better).
+
+Now I want to test an hourly test using indicators one by one.
+MACD: alone is not acceptable. worse for any situation. Changing lookback_window has no tangible effect
+RSI: Nothing special, just tries to keep above zero profit. increasing  lookback_window in the uptrend deteriorates
+the results and in the downtrend improves them
+PSAR: Seems better than the formers but not a lot. Does not show considerable change in chanig lookback_window
+SMA: Nothing special. below one precent in most cases
+Boulinger: Almost like the others, nothing notable.
+ATR: Like the others but a bit better
+
+
+####
+Sep, 1
+##
+
+Combining ATR and CCI: SHIT, just shit. Period.
+Combining ATR and MACD: Better on training, not a lot in the test phase.
+
+####
+
+
+####
+Sep, 4
+##
+
+ATR alone, is better than ATR+MACD
+
+####
+
+
+####
+Sep, 5
+##
+
+In the current configuration, I mean model, we cannot use different timeframes together, coz the logic behind
+the machine is founded just for one timeframe and the added timeframes are considered as the base timeframe.
+Hence, it's useless. The proper way is to have another interprator to decide between different timeframes
+I have used two interpolation: Linear and constant. Both of them were useless.
+
+####
+
+
+####
+Sep, 6
+##
+
+The previous test using constant interpolation was wrong beacuse of using incorrect dataset. Trainging repeated.
+The change improved the result slightly better (some per thousand). -> Nope, nothing. At least, not reliable.
+Now I am going to change the lookback_window and how it does affect the results (times of 12).
+Increasing the lookback_window in the train phase from 12 to 24 enhanced the results (from loss to profit although
+by just few and negligible) in the same timeperiod (comparing the model trained in 12 to the one in 24)
+
+Ok, we need to discuss. Increasing the value of the lookback_window increases the profit. But, as always
+there is a catch. First, I have tested the 12, 24, 48, 98 as the value of the lookback_window. As the result,
+the timeperiod will become increased according to the biggest on to maintain the functionality of the machine.
+In the first, attempt, I set the 48 as the highest and test the two lowers after it. The market was downtrend 
+in day one of the test and up in another two days. Increasing the lookback_window helped to enhance the results, 
+but the net profit was negative.
+Second, I added 96 and trained another machine and tested the previous machines in the new scenario where the
+test period was increased from 60 to 120. this time, the market was totally uptrend. Here, the point is, 
+the lookback_window = 48 performed better than others in 3 out of the 4 testperiods considerably. But, the catch
+is, we increase the number of trades, hence assuming the fee, it may not be suitable. Anyway, the number of 
+orders increases as follows: 10, 33, 40, 57 in average.
+
+
+####
+
+
+####
+Sep, 7
+##
+
+Continuing the last day tests, the results in the timeperiod of 180 (hours), the machine with the 
+lookback_window = 24 outperformed others with making money in all the tests. Of course, no fee was calculated
+and the number of trades in each episode for the 96, 48, 24, and 12 are approximately in 30, 50, 70, and 80.
+I increased the learning rate with lookback_window = 24 from 0.00001 to 0.0001. The result was improving the
+profit in most cases or not having a considerable negative impact on the results. But, the side-effect was
+reducing the number of trades. Hence, it may be a good sign, but it was tested just for ATR.
+
+####
+
+####
+Sep, 11
+##
+
+I made a mistake last time and the result of improving the output by incresing the lr was not accurate.
+This time I set the total_average = deque(maxlen=2). It improved the results up to 50%.
+I want to focuse on changing the model of Actor and Critic
+Dense-Dense: First, I used one more layer for the critic and did not converged. Then I maked them equal.
+I fill I should find another way to imrove the actor with the a stronger critic (like changing the punish).
+Anyway, I in the equal model, to maintain trading (wich was converged to 1 order in each episode), I increased the
+punishment. In this test phase, we achieved lower trades per episode with better resluts in the first two days.
+The outcome of the two last days were asame but with siginificantly lower orders (less than 4).
+
+####
+
+####
+Sep, 12
+##
+
+The last day model had one problem: trading about 1 in each test episode. In fact it, is not a problem, but
+in reality, we miss many opportunities. Hence, we need a more optimized version.
+Today, I have changed the model and add dropout layer. It increased the number of trades in each episode
+(to about 30). And, the results where better than the Dense-CNN. 
+In the Dense-Dense, the previous model, I have decreased lr from 0.0001 to 0.00001. I cannot guarantee that,
+but it resulted in the worse output. It maybe probably a result of not trainging enough.
+
+I repeated the Dense-Dense test, with total_average = deque(maxlen=2) (in the folder 2021_09_12_14_42_Crypto_trader)
+in the sameway as (2021_09_12_11_19, 1300.53) and results were almost the same. But in the test (2021_09_12_14_13)
+where total_average = deque(maxlen=1), results where worse in comparison to the another twos.
+
+I increased total_average to deque(maxlen=4). the results where worse than maxlen=2
+
+
+####
+
+####
+Sep, 13
+##
+
+Today tests: 1- chaning the epochs in training, 2- changing punishment, 3- working on the models
+4- changing the ATR model in the way that first calculate the accodring to the timeframes, then interpolate
+it to become in the format of the 1H timeframe.
+
+All the tests from last week were conducted using just ATR. I can confirm that this indicator was not
+showing much information about the movement of the market. Hence, I can expect if I change it to some others
+indicator, I should not expect the optimization become the same. But anyway, using just this indicator to
+make orders successful was sort of amazing.
+
+I repeated the total_average = deque(maxlen=2) and results were not as good as (2021_09_12_11_19, 1300.53)
+Hence, maxlen=2 is not necessary the best. But the results were still better than 4 (a bit)
+
+Changing punishment: I want to find the border of unstability
+
+####
+
+####
+Sep, 14
+##
+
+By decreasing the punishment to .00002, not only the results improved, but more important, ordering suppressed
+by about one order of magnitude, from the 50 to under 10.
+
+I feel I can spell a final word here: these modifications increase the chance of reaching a better trained machine
+and the results are not guaranteed to be better than another episode under different configs
+
+** One idea spiked in my head is to change the reward  function in the way to apply the number of orders in 
+reverse in the way that encourage the machine to find a middle point in trading (optimizing the number in order to
+catch a lot with less to avoid paying fee)
+** Adding fee maybe lower the trades but I have no clue yet.
+
+I tested deque(maxlen=1) with the last config and I could catch one good result in terms of low number of trades
+and high profit.
+
+Something weird was in the code (get_reward):
+    self.trades[-2]['total']*self.trades[-1]['current_price']
+
+I changed it to:
+    self.trades[-1]['total']*self.trades[-1]['current_price']
+
+As I expected, it did not have a meaningful impact
+
+In our today test: 
+- changing the lookback_window from 48 to 24:
+First, I ran the code for 500 times. The results were not better than the lookback_window = 48. Then I increased
+the iteration number to 1500.
+
+####
+
+####
+Sep, 18
+##
+
+I ran the code with lookback_window = 48 for 1500 iterations. I did not catch a better result in comparison to
+the 500 iterations.
+Today, I want to play with the punishment a bit more and testing lookback_window=12 and punishment = 0.000002.
+I could catch a better result, improving the profit and reducing the rate of orders to under 10.
+
+
+####
+
+####
+Sep, 19
+##
+
+I repeated the test with lookback_window=12 and punishment = 0.000002 and cought a bunch of similar results
+
+
+####
+
+####
+Sep, 20
+##
+
+Today, I started by one change in the data: Removing different timeframes except one (1H) -->
+There was no meaningful difference.
+
+Now, I want to see if I change the parameter of ATR from 14 to 5, we can find anything new:
+I did not test it, cause I feel it will not make any difference on the results.
+
+Looking in the ATR, I do not see any meaningful information. Hence, I will not spend a lot of time on it.
+But still want to explore other options.
+I changed the lookback_window to 12. the overall result, was somehow like the 24 scenario.
+
+** I am just about few percents behind the market (2,3,4) not a lot. In the meantime, in some cases when I
+reduce the period of trading, I could see some benefits less than 1%. It may be a good sign.
+
+Among the lookback_windows, 12 and 24 had the best results. 12 may had even better results overally.
+
+Before working on the model, I want to give it 8-a try in the cases of MACD and PSAR
+
+I set lookback_window = 6 and the result were worse in comparison to 12 and 24.
+
+####
+
+####
+Sep, 21
+##
+
+Last day, I felt that there maybe a chance using PSAR. There is one thing that we need to consider always:
+Historical data is not something that we can look at it as a consistent source of evaluation. To make point
+clearer, all those indicators and prices are not something limited to some boundaries. Hence, we need to 
+extract the 'Motion' or in fact, the essence of the market which we may call them "Features". We need to be
+independent of the values but be aware of the changes.
+Now, we can take some actions:
+1- Instead of using prices, using the price change in each step.
+2- Using feature extractor model like CNN and perhaps in the 2D shape
+3- Derivating the prices and then use them to extract the indicators
+
+** I found that the effect of adding an indicator was too small on the results (in fact, if we set it to zero,
+we will find it not effected a lot). But, ATR improved the results by few percents (about 3%). So, it was not
+totally useless.
+In overall, the big portion was on the shoulder of the open close prices but indicators probably improved it.
+
+####
+
+####
+Sep, 22
+##
+
+I have reached a scenario were in many cases I am just 2 % behind the market in comparison to the buy and
+hold. I mean, instead of 23% in a period, I reach 21%. It Seems not a bad thing when we see in some cases
+we finally make profit, but who can guarantee that this output is really something smart or something with a 
+sort of acceptable logic. I have no clue right now.
+I set the congfig to deque = 1 and psar_2. The result was by far worse than deque = 2 and psar_2.
+I want to see what if I play with the influence of psar_2 (playing with its denuminator).
+In overall, and the surprisingly to my eyes, ATR_1 had resluts better than in all scenarios.
+
+
+####
+Sep, 25
+##
+
+I am dissappointed of PSAR in the form of using MLP model. I don't know why but it does not shed any light
+in our system. Once again, we may use a derivation of it or, we need to use another model like CNN.
+I want to change the model to CNN and see what will be the difference.
+I changed the model from MLP to CNN and in the meantime, used psar_4 and psar_8 together. It improved the result
+slightly but it reduced the chance of loss. I had better times in trading.
+I want to add layers or dropouts in the model to see the difference.
+
+* Tomorrow I should check what will happen if use psar_4 and psar_8 together using the MLP model
+
+####
+
+
+####
+Sep, 26
+##
+Adding dropout layer to the CNN model made weaker and it could not converge. adding just one dropout layer 
+made model less accurate.
+Before jumping back on the MLP, I want to try to change the CNN model and add layers plus increasing the number
+of features.
+* I did not try to test the parameters inside PPO, seeing what will be the results
+* changing kernel size in CNN to an odd number
+
+I can see something weird or whatever we call it. we achieve better results as we traing our model more.
+It is something that I can see in the CNN network, not in MLP. I should give it more time for training and
+see the reuslts.
+
+Using, I did not get great results. In the trained models, I had just one on par model but it was a little worse than
+the one we had using CNN. It turns out, as I mentioned before, we don't necessary receive better results as we run the model 
+for longer times.
+
+I played with kernel size. In two layer model, it did not improve the model but instead it made it worse.
+I added another layer with kernel sizes 7, 5, 3 and it was on par with the base model. All in all, the model
+needs something more to decide faster
+
+####
+
+
+####
+Sep, 27
+##
+
+I feel extracting features using CNN is a better option. There are other methods that I need to consider like
+combining the models. ANyway, there are lots of ideas to imrprove the decision making of the model. I am just
+using one timeframe. In my previous tests, I witnessed that for instance, 4H timeframe provides a better result
+in comparison to the 1H. Hence, in addition to the 1H I can add it too.
+
+Today I want to:
+
+- add psar_2
+- Test dropout layer by putting it right after Conv1D
+- I did not play with the activition function, maybe I can change it for better or worse
+- I want to find out if increase the punishment to see what will be the result of this.
+
+Results:
+* Adding psar_2 in fact improved the model! It increased not just the performance but also the number of trades
+** I need to consider this scenario in the real world: to drop the not profitable bots and focus more on the 
+profitables. It is not a complete vision as it may not carry the real situation where a bot may become profitable
+after a while and the profitable become non profitable.
+
+* I added psar_1 and the result was not improved in comparison to the former model.
+* I added dropout layers and as the result, it could not converge. To concure it, I increased the punishment to 0.000005
+from 0.000002. The final result was not even on par with the machine without any indicator. In this test, I
+removed the psar_1 from the input.
+
+** For the first time, I could conquer the market using MACD_1 in a scenario I've chosen. Delightful.
+Now I will test it across the MACD_2
+* Adding MACD_2
+
+
+####
+
+
+####
+Sep, 28
+##
+
+Ok. I tested 6 scenarios:
+1- increasing the length of training (from 1500 to about 50000). I did not get amazing or expectacular results.
+Almost all were in the same limit. Trainging improved the results but after a while, it deteriorated the agents.
+Now, what I can say? nothing! maybe this sinusoidal behaviour continue its way to provide us with the better results.
+But who knows?
+2- I reduced the lookback_window to 12 and it probably improved our model in the more scenarios.
+3- I added MACD_4 in it was not a great action. Deteriorated our performance.
+4- Adding MACD_2 and MACD_4 all together provided us better results but not in comparison to the MACD_1 alone.
+
+* I think MACD_2 and MACD_4 do not provide better details. Hence they are not the key for improving our model.
+
+####
+
+
+####
+Oct, 04
+##
+
+Today, after a while, I started improving the model using Boulinger Band. Here, I looked at the data it provide
+for us and I watched that it probably can provide the machine some useful insights. I felt that the medium Linear
+in the Boulinger Band provides misinformation to our model. Hence, I removed it. Then I started to parallel 
+training together. The later machine (without the medium line) performed by far better than the former.
+It could act even better than the market (without considering the trading fees).
+
+I added BB_2H in both cases beside the 1H and in both cases, our machine improved. Once again, the case of only
+H and L was better.
+
+When I added all of the juices (all lines of BB in all dateframes), the result was probably better than the one
+without the mid-band. In fact it was more reliable in the department of the trained agents.
+
+
+####
+
+
+####
+Oct, 05
+##
+
+I tested the scenarios where I combined all of the indicators (MACD, PSAR, BB).
+In summary, BB did not help MACD and PSAR to gain better resluts. In fact, it deteriorates the results although
+not by much, but about 1 to 2 percents (from the best MACD+PSAR can achieve).
+In the meantime, I changed the impact of MACD and PSAR and normlized more to be on par with other inputs.
+Currently I cannot find the result I gained, but I saw that although I could not get better results (the overall
+was a bit less than the unnormalized one) but in short periods (from 180H to 24H) it outperformed the unnormalized one.
+
+
+####
+
+
+####
+Oct, 06
+##
+
+Today I will test again. Adding ADX to BB and try other indicators beside MACD+PSAR combination.
+But I wanted to see the impact of MACD_1 on BB. It improved the output. But not better than MACD-PSAR.
+
+ADX_1 + BB was disaster.
+ADX_1 did not provide any insight from the market. Alone was useless.
+ADX_1+ADX_2 maybe was better but nothing considerable
+ADX_1 did not add any improvement to the MACD+PSAR
+
+
