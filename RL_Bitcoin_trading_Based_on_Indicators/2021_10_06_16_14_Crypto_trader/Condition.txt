@@ -1,0 +1,57 @@
+
+
+Number of trains: 1500
+
+
+[		    self.df.loc[self.current_step, 'MACD_1'] / 400,
+                    self.df.loc[self.current_step, 'psar_2'] / 40000,
+                    self.df.loc[self.current_step, 'psar_4'] / 40000,
+                    self.df.loc[self.current_step, 'psar_8'] / 40000,
+		    self.df.loc[current_step, 'RSI_1']/40,
+
+                 ])
+
+
+self.punish_value += self.net_worth * 0.000002
+
+lookback_window_size = 12
+test_window = 24 * 30 # 30 days 
+test_df = df[-test_window:-test_window + 180]
+
+agent = CustomAgent(lookback_window_size=lookback_window_size,
+                        lr=0.0001, epochs=15, optimizer=Adam, batch_size=24, model="Dense")
+
+epochs increased from 5
+
+### CNN Model
+        V = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        V = Dropout(.1)(V)
+        V = MaxPooling1D(pool_size=2)(V)
+        #V = Conv1D(filters=64, kernel_size=7, padding="same", activation="tanh")(X_input) #(V)
+        #V = MaxPooling1D(pool_size=2)(V)
+        #V = dropout_layer(V)
+        #V = Conv1D(filters=32, kernel_size=5, padding="same", activation="tanh")(V)
+        #V = MaxPooling1D(pool_size=2)(V)
+        V = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(V)
+        V = Dropout(.1)(V)
+        V = MaxPooling1D(pool_size=2)(V)
+        #V = dropout_layer(V)
+        V = Flatten()(V)
+
+### CNN Model
+        A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        A = Dropout(.2)(A)
+        A = MaxPooling1D(pool_size=2)(A)
+        #A = Conv1D(filters=64, kernel_size=7, padding="same", activation="tanh")(X_input) #(A)
+        #A = MaxPooling1D(pool_size=2)(A)
+        #A = dropout_layer(A)
+        #A = Conv1D(filters=32, kernel_size=5, padding="same", activation="tanh")(A)
+        #A = MaxPooling1D(pool_size=2)(A)
+        A = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(A)
+        A = Dropout(.1)(A)
+        A = MaxPooling1D(pool_size=2)(A)
+        #A = dropout_layer(A)
+        A = Flatten()(A)
+
+lr = 0.0001  
+total_average = deque(maxlen=2)

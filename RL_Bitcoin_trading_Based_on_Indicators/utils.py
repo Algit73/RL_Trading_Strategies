@@ -7,6 +7,9 @@
 #   GitHub      : https://github.com/pythonlessons/RL-Bitcoin-trading-bot
 #   Description : additional functions
 #
+#   Code revised by: Alireza Alikhani
+#   Email       : alireza.alikhani@outlook.com 
+#
 #================================================================
 import pandas as pd
 from collections import deque
@@ -17,6 +20,7 @@ from datetime import datetime
 import os
 import cv2
 import numpy as np
+from icecream import ic
 
 def Write_to_file(Date, net_worth, filename='{}.txt'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))):
     for i in net_worth: 
@@ -70,9 +74,9 @@ class TradingGraph:
         # Create a new axis for indicatorswhich shares its x-axis with volume
         self.ax4 = self.ax2.twinx()
         
-        self.sma7 = deque(maxlen=self.Render_range)
+        '''self.sma7 = deque(maxlen=self.Render_range)
         self.sma25 = deque(maxlen=self.Render_range)
-        self.sma99 = deque(maxlen=self.Render_range)
+        self.sma99 = deque(maxlen=self.Render_range)'''
         
         self.bb_bbm = deque(maxlen=self.Render_range)
         self.bb_bbh = deque(maxlen=self.Render_range)
@@ -85,38 +89,41 @@ class TradingGraph:
 
 
     def Plot_indicators(self, df, Date_Render_range):
-        self.sma7.append(df["sma7"])
+        '''self.sma7.append(df["sma7"])
         self.sma25.append(df["sma25"])
-        self.sma99.append(df["sma99"])
+        self.sma99.append(df["sma99"])'''
 
-        self.bb_bbm.append(df["bb_bbm"])
-        self.bb_bbh.append(df["bb_bbh"])
-        self.bb_bbl.append(df["bb_bbl"])
+        '''self.bb_bbm.append(df["bb_bbh_1"])
+        self.bb_bbh.append(df["bb_bbm_1"])
+        self.bb_bbl.append(df["bb_bbl_1"])
+        self.bb_bbm.append(df["bb_bbh_2"])
+        self.bb_bbh.append(df["bb_bbm_2"])
+        self.bb_bbl.append(df["bb_bbl_2"])'''
 
-        self.psar.append(df["psar"])
+        #self.psar.append(df["psar"])
 
-        self.MACD.append(df["MACD"])
-        self.RSI.append(df["RSI"])
+        #self.MACD.append(df["MACD"])
+        #self.RSI.append(df["RSI"])
 
         # Add Simple Moving Average
-        self.ax1.plot(Date_Render_range, self.sma7,'-')
+        '''self.ax1.plot(Date_Render_range, self.sma7,'-')
         self.ax1.plot(Date_Render_range, self.sma25,'-')
-        self.ax1.plot(Date_Render_range, self.sma99,'-')
+        self.ax1.plot(Date_Render_range, self.sma99,'-')'''
 
         # Add Bollinger Bands
-        self.ax1.plot(Date_Render_range, self.bb_bbm,'-')
+        '''self.ax1.plot(Date_Render_range, self.bb_bbm,'-')
         self.ax1.plot(Date_Render_range, self.bb_bbh,'-')
-        self.ax1.plot(Date_Render_range, self.bb_bbl,'-')
+        self.ax1.plot(Date_Render_range, self.bb_bbl,'-')'''
 
         # Add Parabolic Stop and Reverse
-        self.ax1.plot(Date_Render_range, self.psar,'.')
+        #self.ax1.plot(Date_Render_range, self.psar,'.')
 
-        self.ax4.clear()
+        '''self.ax4.clear()
         # # Add Moving Average Convergence Divergence
         self.ax4.plot(Date_Render_range, self.MACD,'r-')
 
         # # Add Relative Strength Index
-        self.ax4.plot(Date_Render_range, self.RSI,'g-')
+        self.ax4.plot(Date_Render_range, self.RSI,'g-')'''
 
     # Render the environment to the screen
     #def render(self, Date, Open, High, Low, Close, Volume, net_worth, trades):
@@ -167,11 +174,11 @@ class TradingGraph:
                 if trade['type'] == 'buy':
                     high_low = trade['Low'] - RANGE*0.02
                     ycoords = trade['Low'] - RANGE*0.08
-                    self.ax1.scatter(trade_date, high_low, c='green', label='green', s = 120, edgecolors='none', marker="^")
+                    self.ax1.scatter(trade_date, high_low, c='green', label='green', s = 180, edgecolors='none', marker="^")
                 else:
                     high_low = trade['High'] + RANGE*0.02
                     ycoords = trade['High'] + RANGE*0.06
-                    self.ax1.scatter(trade_date, high_low, c='red', label='red', s = 120, edgecolors='none', marker="v")
+                    self.ax1.scatter(trade_date, high_low, c='red', label='red', s = 180, edgecolors='none', marker="v")
 
                 if self.Show_reward:
                     try:
@@ -184,6 +191,8 @@ class TradingGraph:
         self.ax2.set_xlabel('Date')
         self.ax1.set_ylabel('Price')
         self.ax3.set_ylabel('Balance')
+
+        #ic(len(trades))
 
         # I use tight_layout to replace plt.subplots_adjust
         self.fig.tight_layout()

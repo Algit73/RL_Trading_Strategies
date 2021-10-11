@@ -7,6 +7,10 @@
 #   GitHub      : https://github.com/pythonlessons/RL-Bitcoin-trading-bot
 #   Description : defined PPO Keras model classes
 #
+#
+#   Code revised by: Alireza Alikhani
+#   Email       : alireza.alikhani@outlook.com 
+#
 #================================================================
 import numpy as np
 import tensorflow as tf
@@ -27,51 +31,29 @@ class Shared_Model:
     def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense"):
         X_input = Input(input_shape)
         self.action_space = action_space
-
-        # Shared CNN layers:
-        if model=="CNN":
-            X = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
-            X = MaxPooling1D(pool_size=2)(X)
-            X = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(X)
-            X = MaxPooling1D(pool_size=2)(X)
-            X = Flatten()(X)
-
-        # Shared LSTM layers:
-        elif model=="LSTM":
-            X = LSTM(512, return_sequences=True)(X_input)
-            #X = LSTM(256)(X)
-            # Belows are added
-            X = LSTM(256, return_sequences=True)(X)
-            X = BatchNormalization()(X)
-            X = Dense(256, activation="relu")(X)
-            X = LSTM(1)(X)
-
-        # Shared Dense layers:
-        else:
-            X = Flatten()(X_input)
-            X = Dense(512, activation="relu")(X)
             
         
         ## Critic model
-        ### Dense Model + DropOut
-        
+        ### Dense Model (simple)
         '''V = Dense(512, activation="relu")(X)
         V = Dense(256, activation="relu")(V)
         V = Dense(64, activation="relu")(V)'''
 
         ### Dense Model + DropOut
-        dropout_layer = Dropout(.2)
+        '''X = Flatten()(X_input)
+        X = Dense(512, activation="relu")(X)
+        #dropout_layer = Dropout(.2)
         
-        V = dropout_layer(X)
+        #V = dropout_layer(X)
+        V = Dense(512, activation="relu")(X)
+        #V = dropout_layer(V)
         V = Dense(512, activation="relu")(V)
-        V = dropout_layer(V)
-        V = Dense(512, activation="relu")(V)
-        V = dropout_layer(V)
+        #V = dropout_layer(V)
         V = Dense(256, activation="relu")(V)
-        V = dropout_layer(V)
+        #V = dropout_layer(V)
         V = Dense(64, activation="relu")(V)
-        V = dropout_layer(V)
-        #value = Dense(1, activation=None)(V)
+        #V = dropout_layer(V)
+        #value = Dense(1, activation=None)(V)'''
 
         ### LSTM Model
         '''X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
@@ -81,15 +63,24 @@ class Shared_Model:
         X = LSTM(1)(X)'''
 
         ### CNN Model
-        '''X = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
-        X = MaxPooling1D(pool_size=2)(X)
-        X = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(X)
-        X = MaxPooling1D(pool_size=2)(X)
-        X = Flatten()(X)'''
+        #dropout_layer = Dropout(.2)
+        V = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        #V = Dropout(.1)(V)
+        V = MaxPooling1D(pool_size=2)(V)
+        #V = Conv1D(filters=64, kernel_size=7, padding="same", activation="tanh")(X_input) #(V)
+        #V = MaxPooling1D(pool_size=2)(V)
+        #V = dropout_layer(V)
+        #V = Conv1D(filters=32, kernel_size=5, padding="same", activation="tanh")(V)
+        #V = MaxPooling1D(pool_size=2)(V)
+        V = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(V)
+        #V = Dropout(.1)(V)
+        V = MaxPooling1D(pool_size=2)(V)
+        #V = dropout_layer(V)
+        V = Flatten()(V)
 
         ###
 
-        value = Dense(1, activation=None)(X)
+        value = Dense(1, activation=None)(V)
         self.Critic = Model(inputs=X_input, outputs = value) # value --> X
         self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(learning_rate=learning_rate))
 
@@ -102,15 +93,16 @@ class Shared_Model:
         A = Dense(64, activation="relu")(A)'''
 
         ### Dense Model + DropOut
-        A = dropout_layer(X)
+        '''dropout_layer = Dropout(.2)
+        #A = dropout_layer(X)
+        A = Dense(512, activation="relu")(X)
+        #A = dropout_layer(A)
         A = Dense(512, activation="relu")(A)
-        A = dropout_layer(A)
-        A = Dense(512, activation="relu")(A)
-        A = dropout_layer(A)
+        #A = dropout_layer(A)
         A = Dense(256, activation="relu")(A)
-        A = dropout_layer(A)
+        #A = dropout_layer(A)
         A = Dense(64, activation="relu")(A)
-        A = dropout_layer(A)
+        #A = dropout_layer(A)'''
 
         ### LSTM Model
         #TODO : Adding Dropout
@@ -120,11 +112,20 @@ class Shared_Model:
         X = LSTM(1)(X)'''
 
         ### CNN Model
-        '''A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        dropout_layer = Dropout(.1)
+        A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        #A = Dropout(.2)(A)
         A = MaxPooling1D(pool_size=2)(A)
+        #A = Conv1D(filters=64, kernel_size=7, padding="same", activation="tanh")(X_input) #(A)
+        #A = MaxPooling1D(pool_size=2)(A)
+        #A = dropout_layer(A)
+        #A = Conv1D(filters=32, kernel_size=5, padding="same", activation="tanh")(A)
+        #A = MaxPooling1D(pool_size=2)(A)
         A = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(A)
+        #A = Dropout(.1)(A)
         A = MaxPooling1D(pool_size=2)(A)
-        A = Flatten()(A)'''
+        #A = dropout_layer(A)
+        A = Flatten()(A)
 
         output = Dense(self.action_space, activation="softmax")(A) # A --> X
 

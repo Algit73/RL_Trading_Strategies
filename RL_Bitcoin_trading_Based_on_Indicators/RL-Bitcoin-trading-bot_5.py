@@ -7,6 +7,10 @@
 #   GitHub      : https://github.com/pythonlessons/RL-Bitcoin-trading-bot
 #   Description : Trading Crypto with Reinforcement Learning #5
 #
+#   Code revised by: Alireza Alikhani
+#   Email       : alireza.alikhani@outlook.com 
+#
+#
 # ================================================================
 from indicators import AddIndicators
 from datetime import datetime
@@ -34,7 +38,7 @@ plt.figure(figsize=(10, 10))
 
 class CustomAgent:
     # A custom Bitcoin trading agent
-    def __init__(self, lookback_window_size=50, learning_rate=0.00005, epochs=1, optimizer=Adam, batch_size=32, model=""):
+    def __init__(self, lookback_window_size=50, learning_rate=0.00005, epochs=1, optimizer=Adam, batch_size=32, model="",state_size=10):
         self.lookback_window_size = lookback_window_size
         self.model = model
 
@@ -51,7 +55,7 @@ class CustomAgent:
         # self.state_size = (lookback_window_size, 10+9) # 10 standard information +9 indicators
 
         
-        self.state_size = (lookback_window_size, 10+1)
+        self.state_size = (lookback_window_size, state_size)
 
         # Neural Networks part bellow
         self.learning_rate = learning_rate
@@ -59,7 +63,7 @@ class CustomAgent:
         self.optimizer = optimizer
         self.batch_size = batch_size
 
-        # Create shared Actor-Critic network model
+        ## Create shared Actor-Critic network model
         self.Actor = self.Critic = Shared_Model(
             input_shape=self.state_size, action_space=self.action_space.shape[0], learning_rate = self.learning_rate, optimizer=self.optimizer, model=self.model)
         # Create Actor-Critic network model
@@ -120,30 +124,24 @@ class CustomAgent:
         return np.vstack(gaes), np.vstack(target)
 
     def replay(self, states, actions, rewards, predictions, dones, next_states):
-        # reshape memory to appropriate shape for training
+        ## reshape memory to appropriate shape for training
         states = np.vstack(states)
         next_states = np.vstack(next_states)
         actions = np.vstack(actions)
         predictions = np.vstack(predictions)
 
-        # Get Critic network predictions
+        ## Get Critic network predictions
         values = self.Critic.critic_predict(states)
         next_values = self.Critic.critic_predict(next_states)
 
-        # Compute advantages
+        ## Compute advantages
         advantages, target = self.get_gaes(
             rewards, dones, np.squeeze(values), np.squeeze(next_values))
-        '''
-        plt.plot(target,'-')
-        plt.plot(advantages,'.')
-        ax=plt.gca()
-        ax.grid(True)
-        plt.show()
-        '''
-        # stack everything to numpy array
+
+        ## stack everything to numpy array
         y_true = np.hstack([advantages, predictions, actions])
 
-        # training Actor and Critic networks
+        ## training Actor and Critic networks
         a_loss = self.Actor.Actor.fit(
             states, y_true, epochs=self.epochs, verbose=0, shuffle=True, batch_size=self.batch_size)
         c_loss = self.Critic.Critic.fit(
@@ -220,10 +218,11 @@ class CustomEnv:
 
     # Reset the state of the environment to an initial state
     def reset(self, env_steps_size=0):
-        self.visualization = TradingGraph(Render_range=self.Render_range, Show_reward=self.Show_reward,
+        self.visualization = TradingGraph(Render_range=180, Show_reward=self.Show_reward,
                                           Show_indicators=self.Show_indicators)  # init visualization
         # limited orders memory for visualization
-        self.trades = deque(maxlen=self.Render_range)
+        #self.trades = deque(maxlen=self.Render_range)
+        self.trades = deque(maxlen=180)
 
         self.balance = self.initial_balance
         self.net_worth = self.initial_balance
@@ -258,27 +257,29 @@ class CustomEnv:
                                         self.df.loc[current_step, 'Volume'],
                                         ])
 
-            '''self.indicators_history.append(
-                [self.df.loc[current_step, 'sma7'] / self.normalize_value,
-                                        self.df.loc[current_step, 'sma25'] / self.normalize_value,
-                                        self.df.loc[current_step, 'sma99'] / self.normalize_value,
-                                        self.df.loc[current_step, 'bb_bbm'] / self.normalize_value,
-                                        self.df.loc[current_step, 'bb_bbh'] / self.normalize_value,
-                                        self.df.loc[current_step, 'bb_bbl'] / self.normalize_value,
-                                        self.df.loc[current_step, 'psar'] / self.normalize_value,
-                                        self.df.loc[current_step, 'MACD'] / 400,
-                                        self.df.loc[current_step, 'RSI'] / 100,
-                                        self.df.loc[self.current_step, 'ATR'] /100
-                                        ])'''
 
-            '''self.indicators_history.append(
-                [self.df.loc[current_step, 'ATR'] / 100,
-                    self.df.loc[current_step, 'MACD']/400
-                 ])'''
             self.indicators_history.append(
-                [self.df.loc[current_step, 'ATR_1'] / 100,
+                [
+                    self.df.loc[current_step, 'MACD_1'] / 400,
+                    #self.df.loc[current_step, 'MACD_4'] / 100,
+                    #self.df.loc[current_step, 'MACD_2'] / 100,
+                    #self.df.loc[current_step, 'psar_1'] / 1000,
+                    self.df.loc[current_step, 'psar_2'] / 40000,
+                    self.df.loc[current_step, 'psar_4'] / 40000,
+                    self.df.loc[self.current_step, 'psar_8'] / 40000,
                     #self.df.loc[current_step, 'ATR_2']/100,
                     #self.df.loc[current_step, 'ATR_4']/100
+                    #self.df.loc[current_step, 'bb_bbh_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbl_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbm_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbh_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbl_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbm_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbh_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbl_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbm_4']/self.normalize_value
+                    #self.df.loc[current_step, 'ADX_1']/40,
+                    #self.df.loc[current_step, 'RSI_1']/80,
                  ])
 
         state = np.concatenate(
@@ -296,27 +297,27 @@ class CustomEnv:
                                     self.df.loc[self.current_step, 'Volume'],
                                     ])
 
-        '''self.indicators_history.append([self.df.loc[self.current_step, 'sma7'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'sma25'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'sma99'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'bb_bbm'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'bb_bbh'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'bb_bbl'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'psar'] / self.normalize_value,
-                                    self.df.loc[self.current_step, 'MACD'] / 400,
-                                    self.df.loc[self.current_step, 'RSI'] / 100,
-                                    self.df.loc[self.current_step, 'ATR'] /100
-                                    ])'''
-
-        '''self.indicators_history.append([
-            self.df.loc[self.current_step, 'ATR'] /100,
-             self.df.loc[self.current_step, 'MACD']/400 
-
-        ])'''
         self.indicators_history.append(
-                [self.df.loc[self.current_step, 'ATR_1'] / 100,
+                [
+                    self.df.loc[self.current_step, 'MACD_1'] / 400,
+                    #self.df.loc[self.current_step, 'MACD_4'] / 100,
+                    #self.df.loc[self.current_step, 'MACD_2'] / 100,
+                    #self.df.loc[self.current_step, 'psar_1'] / 1000,
+                    self.df.loc[self.current_step, 'psar_2'] / 40000,
+                    self.df.loc[self.current_step, 'psar_4'] / 40000,
+                    self.df.loc[self.current_step, 'psar_8'] / 40000,
                     #self.df.loc[self.current_step, 'ATR_2']/100,
                     #self.df.loc[self.current_step, 'ATR_4']/100
+                    #self.df.loc[self.current_step, 'bb_bbh_1']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbl_1']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbm_1']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbh_2']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbl_2']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbm_2']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbh_4']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbl_4']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'bb_bbm_4']/self.normalize_value,
+                    #self.df.loc[self.current_step, 'ADX_1']/80,
                  ])
 
         obs = np.concatenate(
@@ -325,16 +326,13 @@ class CustomEnv:
 
         return obs
 
-    # Execute one time step within the environment
+    ## Execute one time step within the environment
     def step(self, action):
         self.crypto_bought = 0
         self.crypto_sold = 0
         self.current_step += 1
 
-        # Set the current price to a random price between open and close
-        # current_price = random.uniform(
-        #    self.df.loc[self.current_step, 'Open'],
-        #    self.df.loc[self.current_step, 'Close'])
+        ## Set the current price to Open
         current_price = self.df.loc[self.current_step, 'Open']
         Date = self.df.loc[self.current_step, 'Date']  # for visualization
         High = self.df.loc[self.current_step, 'High']  # for visualization
@@ -409,7 +407,7 @@ class CustomEnv:
     def render(self, visualize=False):
         #print(f'Step: {self.current_step}, Net Worth: {self.net_worth}')
         if visualize:
-            # Render the environment to the screen
+            ## Render the environment to the screen (inside utils.py file)
             img = self.visualization.render(
                 self.df.loc[self.current_step], self.net_worth, self.trades)
             return img
@@ -437,7 +435,7 @@ def Random_games(env, visualize, test_episodes=50, comment=""):
 
     print("average {} episodes random net_worth: {}, orders: {}".format(
         test_episodes, average_net_worth/test_episodes, average_orders/test_episodes))
-    # save test results to test_results.txt file
+    ## save test results to test_results.txt file
     with open("test_results.txt", "a+") as results:
         current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
         results.write(
@@ -451,7 +449,7 @@ def Random_games(env, visualize, test_episodes=50, comment=""):
 def train_agent(env, agent, visualize=False, train_episodes=50, training_batch_size=500):
     agent.create_writer(env.initial_balance, env.normalize_value,
                         train_episodes)  # create TensorBoard writer
-    ## save recent 100 episodes net worth
+    ## save n recent (maxlen=n) episodes net worth
     total_average = deque(maxlen=2)  
     best_average = 0  # used to track best average net worth
     for episode in range(train_episodes):
@@ -460,8 +458,6 @@ def train_agent(env, agent, visualize=False, train_episodes=50, training_batch_s
         states, actions, rewards, predictions, dones, next_states = [], [], [], [], [], []
         for t in range(training_batch_size):
             env.render(visualize)
-            #env.render(True) if t == training_batch_size-1 else env.render(False)
-            #env.render(visualize or episode == training_batch_size-1)
             action, prediction = agent.act(state)
             next_state, reward, done = env.step(action)
             states.append(np.expand_dims(state, axis=0))
@@ -505,7 +501,7 @@ def test_agent(env, agent, visualize=True, test_episodes=10, folder="", name="Cr
     for episode in range(test_episodes):
         state = env.reset()
         while True:
-            #env.render(visualize or episode == test_episodes-1)
+            env.render(visualize and (episode == (test_episodes-1)))
             action, prediction = agent.act(state)
             state, reward, done = env.step(action)
             if env.current_step == env.end_step:
@@ -532,76 +528,33 @@ def test_agent(env, agent, visualize=True, test_episodes=10, folder="", name="Cr
 
 
 if __name__ == "__main__":
-    ''' 
-    df = pd.read_csv('./pricedata.csv')
-    df = df.sort_values('Date')
-    df = AddIndicators(df) # insert indicators to df
-    print(df)
-    '''
 
-    '''save_folder = ""
-    df = pd.read_csv('./Artificial_env.csv')
-    df.Date = pd.date_range('2020-01-01', '2021-01-01', freq="h")[:len(df)]
-    df = df.sort_values('Date')
-    df.dropna(inplace=True)
-    df = AddIndicators(df) # insert indicators to df
-    df = df.round(2)'''
-
-    #
-    save_folder = ""
-    # df = pd.read_csv('./Binance_BTCUSDT_5m.csv')#[::-1]
-    # df = pd.read_csv('./Binance_BTCUSDT_4h.csv')  # [::-1]
-    # df = pd.read_csv('./2020_01_to_2021_01.csv')#[::-1]
-    # df = pd.read_csv('./Binance_BTCUSDT_4h.csv')#[::-1]
-    # df = pd.read_csv('./Binance_BTCUSDT_8h.csv')#[::-1]
-    # df = pd.read_csv('./Binance_BTCUSDT_12h.csv')#[::-1]
-    # df = pd.read_csv('./Binance_BTCUSDT_1h2021_8.csv')#[::-1]
-    df = pd.read_csv('./Binance_BTCUSDT_1h_Base_Cnst_Interpolated.csv')  # [::-1]
-    df = df.sort_values('Date')
+    ## Reading a time-based dataframe with/without indicators
+    df = pd.read_csv('./Binance_BTCUSDT_1h_Base_MACD_PSAR_ATR_BB_ADX_RSI_Cnst_Interpolated.csv')  # [::-1]
+    #df = df.sort_values('Date').reset_index(drop=True)
     #df = AddIndicators(df)  # insert indicators to df
-    #df = df.round(2)
+    #df = df.round(2)   # two digit precision
 
-    # print(df)
-    # '''
-    '''
-    data = yf.download(tickers='BTC-USD',  interval = '1h',start='2020-01-01', end='2021-01-01',)
-    data.pop('Adj Close')
-    data = data.rename_axis('Date').reset_index()
-    data = AddIndicators(data)
-    print(data)
-    '''
 
-    # print(data)
-    #test_df = data[-400:]
-# '''
-    lookback_window_size = 6
-    test_window = 24 * 29  # 30 days
+    lookback_window_size = 12
+    test_window = 24 * 30    # 30 days
 
-    ## Trainging Section:
+    ## Training Section:
     train_df = df[:-test_window-lookback_window_size]
     agent = CustomAgent(lookback_window_size=lookback_window_size,
-                        learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24, model="Dense")
+                        learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24
+                                                        , model="Dense", state_size=10+4)
 
     train_env = CustomEnv(train_df, lookback_window_size=lookback_window_size)
-    #train_agent(train_env, agent, visualize=False, train_episodes=50000, training_batch_size=500)
-    #train_agent(train_env, agent, visualize=False,
-    #          train_episodes=1500, training_batch_size=500)
-
-    ### Getting the saved file and folder name:
-    folder_name = agent.get_folder_name
-    file_name = agent.get_file_name
-    ic(folder_name)
-    ic(file_name)
+    train_agent(train_env, agent, visualize=False,
+              train_episodes=2000, training_batch_size=500)
     
 
     ## Testing Section:
-    test_df = df[-test_window:-test_window + 48]
-    print(test_df)
-    #test_env = CustomEnv(test_df, lookback_window_size=lookback_window_size, Show_reward=True, Show_indicators=True)
+    test_df = df[-test_window:-test_window + 240]
+    ic(test_df[['Open','Close']])   # Depicting the specified Time-period
     test_env = CustomEnv(test_df, lookback_window_size=lookback_window_size,
                          Show_reward=True, Show_indicators=True)
-    test_agent(test_env, agent, visualize=False, test_episodes=100,
-               folder="2021_09_20_16_25_Crypto_trader", name="1391.36_Crypto_trader", comment="")
-               # 1357.35
-    # Plot_OHCL(test_df)
-# '''
+    test_agent(test_env, agent, visualize=True, test_episodes=10,
+                folder="2021_10_06_11_42_Crypto_trader", name="1498.99_Crypto_trader", comment="")
+
