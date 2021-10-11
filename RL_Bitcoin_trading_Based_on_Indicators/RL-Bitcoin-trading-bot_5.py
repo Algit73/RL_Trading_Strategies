@@ -9,6 +9,7 @@
 #
 #   Code revised by: Alireza Alikhani
 #   Email       : alireza.alikhani@outlook.com 
+#   Version     : 1.0.0
 #
 #
 # ================================================================
