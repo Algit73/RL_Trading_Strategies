@@ -9,7 +9,7 @@
 #
 #   Code revised by: Alireza Alikhani
 #   Email       : alireza.alikhani@outlook.com 
-#   Version     : 1.0.0
+#   Version     : 1.0.1
 #
 #
 # ================================================================
@@ -261,13 +261,13 @@ class CustomEnv:
 
             self.indicators_history.append(
                 [
-                    self.df.loc[current_step, 'MACD_1'] / 400,
+                    #self.df.loc[current_step, 'MACD_1'] / 400,
                     #self.df.loc[current_step, 'MACD_4'] / 100,
                     #self.df.loc[current_step, 'MACD_2'] / 100,
                     #self.df.loc[current_step, 'psar_1'] / 1000,
-                    self.df.loc[current_step, 'psar_2'] / 40000,
-                    self.df.loc[current_step, 'psar_4'] / 40000,
-                    self.df.loc[self.current_step, 'psar_8'] / 40000,
+                    #self.df.loc[current_step, 'psar_2'] / 40000,
+                    #self.df.loc[current_step, 'psar_4'] / 40000,
+                    #self.df.loc[self.current_step, 'psar_8'] / 40000,
                     #self.df.loc[current_step, 'ATR_2']/100,
                     #self.df.loc[current_step, 'ATR_4']/100
                     #self.df.loc[current_step, 'bb_bbh_1']/self.normalize_value,
@@ -281,6 +281,10 @@ class CustomEnv:
                     #self.df.loc[current_step, 'bb_bbm_4']/self.normalize_value
                     #self.df.loc[current_step, 'ADX_1']/40,
                     #self.df.loc[current_step, 'RSI_1']/80,
+                    self.df.loc[current_step, 'ichi_a_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_b_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_base_line_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_conversion_line_1']/self.normalize_value,
                  ])
 
         state = np.concatenate(
@@ -300,13 +304,13 @@ class CustomEnv:
 
         self.indicators_history.append(
                 [
-                    self.df.loc[self.current_step, 'MACD_1'] / 400,
+                    #self.df.loc[self.current_step, 'MACD_1'] / 400,
                     #self.df.loc[self.current_step, 'MACD_4'] / 100,
                     #self.df.loc[self.current_step, 'MACD_2'] / 100,
                     #self.df.loc[self.current_step, 'psar_1'] / 1000,
-                    self.df.loc[self.current_step, 'psar_2'] / 40000,
-                    self.df.loc[self.current_step, 'psar_4'] / 40000,
-                    self.df.loc[self.current_step, 'psar_8'] / 40000,
+                    #self.df.loc[self.current_step, 'psar_2'] / 40000,
+                    #self.df.loc[self.current_step, 'psar_4'] / 40000,
+                    #self.df.loc[self.current_step, 'psar_8'] / 40000,
                     #self.df.loc[self.current_step, 'ATR_2']/100,
                     #self.df.loc[self.current_step, 'ATR_4']/100
                     #self.df.loc[self.current_step, 'bb_bbh_1']/self.normalize_value,
@@ -319,6 +323,10 @@ class CustomEnv:
                     #self.df.loc[self.current_step, 'bb_bbl_4']/self.normalize_value,
                     #self.df.loc[self.current_step, 'bb_bbm_4']/self.normalize_value,
                     #self.df.loc[self.current_step, 'ADX_1']/80,
+                    self.df.loc[self.current_step, 'ichi_a_1']/self.normalize_value,
+                    self.df.loc[self.current_step, 'ichi_b_1']/self.normalize_value,
+                    self.df.loc[self.current_step, 'ichi_base_line_1']/self.normalize_value,
+                    self.df.loc[self.current_step, 'ichi_conversion_line_1']/self.normalize_value,
                  ])
 
         obs = np.concatenate(
@@ -531,7 +539,7 @@ def test_agent(env, agent, visualize=True, test_episodes=10, folder="", name="Cr
 if __name__ == "__main__":
 
     ## Reading a time-based dataframe with/without indicators
-    df = pd.read_csv('./Binance_BTCUSDT_1h_Base_MACD_PSAR_ATR_BB_ADX_RSI_Cnst_Interpolated.csv')  # [::-1]
+    df = pd.read_csv('./Binance_BTCUSDT_1h_Base_MACD_PSAR_ATR_BB_ADX_RSI_ICHI_Cnst_Interpolated.csv')  # [::-1]
     #df = df.sort_values('Date').reset_index(drop=True)
     #df = AddIndicators(df)  # insert indicators to df
     #df = df.round(2)   # two digit precision
@@ -552,10 +560,10 @@ if __name__ == "__main__":
     
 
     ## Testing Section:
-    test_df = df[-test_window:-test_window + 240]
+    test_df = df[-test_window:-test_window + 180]
     ic(test_df[['Open','Close']])   # Depicting the specified Time-period
     test_env = CustomEnv(test_df, lookback_window_size=lookback_window_size,
                          Show_reward=True, Show_indicators=True)
-    test_agent(test_env, agent, visualize=True, test_episodes=10,
-                folder="2021_10_06_11_42_Crypto_trader", name="1498.99_Crypto_trader", comment="")
+    #test_agent(test_env, agent, visualize=True, test_episodes=100,
+    #            folder="2021_10_06_11_42_Crypto_trader", name="1498.99_Crypto_trader", comment="")
 
