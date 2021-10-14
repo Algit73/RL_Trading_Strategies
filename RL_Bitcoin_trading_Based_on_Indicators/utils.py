@@ -19,6 +19,7 @@ import matplotlib.dates as mpl_dates
 from datetime import datetime
 import os
 import cv2
+from google.colab.patches import cv2_imshow
 import numpy as np
 from icecream import ic
 
@@ -215,7 +216,7 @@ class TradingGraph:
         image = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
         # display image with OpenCV or any operation you like
-        cv2.imshow("Bitcoin trading bot",image)
+        cv2_imshow(image)
         
 
         if cv2.waitKey(25) & 0xFF == ord("q"):
