@@ -175,11 +175,13 @@ class Actor_Model:
         X_input = Input(input_shape)
         self.action_space = action_space
 
+        # ____This is a Seperator not a comment____
         X = Flatten(input_shape=input_shape)(X_input)
         X = Dense(512, activation="relu")(X)
         X = Dense(256, activation="relu")(X)
         X = Dense(64, activation="relu")(X)
         output = Dense(self.action_space, activation="softmax")(X)
+        # ____This is a Seperator not a comment____
 
         self.Actor = Model(inputs = X_input, outputs = output)
         self.Actor.compile(loss=self.ppo_loss, optimizer=optimizer(lr=lr))
@@ -218,11 +220,13 @@ class Critic_Model:
     def __init__(self, input_shape, action_space, lr, optimizer):
         X_input = Input(input_shape)
 
+        # ____This is a Seperator not a comment____
         V = Flatten(input_shape=input_shape)(X_input)
         V = Dense(512, activation="relu")(V)
         V = Dense(256, activation="relu")(V)
         V = Dense(64, activation="relu")(V)
         value = Dense(1, activation=None)(V)
+        # ____This is a Seperator not a comment____
 
         self.Critic = Model(inputs=X_input, outputs = value)
         self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(lr=lr))
