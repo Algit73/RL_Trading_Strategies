@@ -224,7 +224,7 @@ class TradingGraph:
             return
         else:
             current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
-            cv2.imwrite("output"+current_date+".jpg", img)
+            cv2.imwrite("./tests/output"+current_date+".jpg", img)
             return 
         
 
