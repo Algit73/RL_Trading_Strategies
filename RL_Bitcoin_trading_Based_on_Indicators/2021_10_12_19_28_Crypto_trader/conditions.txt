@@ -39,4 +39,4 @@ agent = CustomAgent(lookback_window_size=lookback_window_size,
         A = Flatten()(A)
 
 lr = 0.0001  
-total_average = deque(maxlen=2)
+total_average = deque(maxlen=2) 
