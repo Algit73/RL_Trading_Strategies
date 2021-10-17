@@ -54,5 +54,5 @@
         V = Dense(512, activation="relu")(V)
         V = Dense(256, activation="relu")(V)
         V = Dense(64, activation="relu")(V)
-        value = Dense(1, activation=None)(V)
+        value = Dense(1, activation=None)(V) 
         
