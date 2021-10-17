@@ -224,6 +224,8 @@ class TradingGraph:
             return
         else:
             current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
+            if not os.path.exists("./tests/"):
+              os.makedirs("./tests/")
             cv2.imwrite("./tests/output"+current_date+".jpg", img)
             return 
         
