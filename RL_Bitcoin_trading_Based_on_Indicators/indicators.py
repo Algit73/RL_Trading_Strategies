@@ -46,7 +46,7 @@ def AddIndicators(df):
     df["RSI"] = rsi(close=df["Close"], window=14, fillna=True) # mazas
     
     # Add Ichimoku Cloud Indicator
-    indicator_Ichimoku = IchimokuIndicator(high=df["High"], low=df["Low"],, window1=9, window2=26, window3=52, visual=False, fillna=False)
+    indicator_Ichimoku = IchimokuIndicator(high=df["High"], low=df["Low"], window1=9, window2=26, window3=52, visual=False, fillna=False)
     df["ichi_a_15m"] = indicator_Ichimoku.ichimoku_a()
     df["ichi_b_15m"] = indicator_Ichimoku.ichimoku_b()
     df["ichi_base_line_15m"] = indicator_Ichimoku.ichimoku_base_line()
