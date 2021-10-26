@@ -8,15 +8,16 @@
 #   Description : Used to plot 5 indicators with OHCL bars
 #
 #================================================================
-import pandas as pd 
+import pandas as pd
 from ta.trend import SMAIndicator, macd, PSARIndicator, cci
 from ta.volatility import BollingerBands, AverageTrueRange
 from ta.momentum import rsi
+from ta.trend import IchimokuIndicator
 #from utils import Plot_OHCL
 
 def AddIndicators(df):
     # Add Simple Moving Average (SMA) indicators
-    '''df["sma7"] = SMAIndicator(close=df["Close"], window=7, fillna=True).sma_indicator()
+    df["sma7"] = SMAIndicator(close=df["Close"], window=7, fillna=True).sma_indicator()
     df["sma25"] = SMAIndicator(close=df["Close"], window=25, fillna=True).sma_indicator()
     df["sma99"] = SMAIndicator(close=df["Close"], window=99, fillna=True).sma_indicator()
     
@@ -28,10 +29,10 @@ def AddIndicators(df):
 
     # Add Parabolic Stop and Reverse (Parabolic SAR) indicator
     indicator_psar = PSARIndicator(high=df["High"], low=df["Low"], close=df["Close"], step=0.02, max_step=2, fillna=True)
-    df['psar'] = indicator_psar.psar()'''
+    df['psar'] = indicator_psar.psar()
 
     # Add Commodity Channel Index (CCI) indicator
-    #df['CCI'] = cci(high=df["High"], low=df["Low"], close=df["Close"])
+    df['CCI'] = cci(high=df["High"], low=df["Low"], close=df["Close"])
 
     # Add Average True Range (ATR) indicator
     indicator_atr = AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"], fillna=True)
@@ -42,8 +43,16 @@ def AddIndicators(df):
     df["MACD"] = macd(close=df["Close"], window_slow=26, window_fast=12, fillna=True) # mazas
 
     # Add Relative Strength Index (RSI) indicator
-    #df["RSI"] = rsi(close=df["Close"], window=14, fillna=True) # mazas
+    df["RSI"] = rsi(close=df["Close"], window=14, fillna=True) # mazas
     
+    # Add Ichimoku Cloud Indicator
+    indicator_Ichimoku = IchimokuIndicator(high=df["High"], low=df["Low"],, window1=9, window2=26, window3=52, visual=False, fillna=False)
+    df["ichi_a_15m"] = indicator_Ichimoku.ichimoku_a()
+    df["ichi_b_15m"] = indicator_Ichimoku.ichimoku_b()
+    df["ichi_base_line_15m"] = indicator_Ichimoku.ichimoku_base_line()
+    df["ichi_conversion_line_15m"] = indicator_Ichimoku.ichimoku_conversion_line() 
+
+
     return df
 
 if __name__ == "__main__":   
