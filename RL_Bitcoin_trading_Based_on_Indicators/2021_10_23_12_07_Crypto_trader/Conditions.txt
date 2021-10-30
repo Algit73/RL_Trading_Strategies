@@ -1,0 +1,66 @@
+
+            self.indicators_history.append(
+                [
+                    #self.df.loc[current_step, 'MACD_1'] / 400,
+                    #self.df.loc[current_step, 'MACD_4'] / 100,
+                    #self.df.loc[current_step, 'MACD_2'] / 100,
+                    #self.df.loc[current_step, 'psar_1'] / 1000,
+                    #self.df.loc[current_step, 'psar_2'] / 40000,
+                    #self.df.loc[current_step, 'psar_4'] / 40000,
+                    #self.df.loc[self.current_step, 'psar_8'] / 40000,
+                    self.df.loc[current_step, 'ATR_2']/100,
+                    #self.df.loc[current_step, 'ATR_4']/100
+                    #self.df.loc[current_step, 'bb_bbh_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbl_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbm_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbh_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbl_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbm_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbh_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbl_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'bb_bbm_4']/self.normalize_value
+                    #self.df.loc[current_step, 'ADX_1']/40,
+                    #self.df.loc[current_step, 'RSI_1']/80,
+                    self.df.loc[current_step, 'ichi_a_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_b_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_base_line_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_conversion_line_1']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_a_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_b_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_base_line_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_conversion_line_2']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_a_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_b_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_base_line_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_conversion_line_4']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_a_8']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_b_8']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_base_line_8']/self.normalize_value,
+                    #self.df.loc[current_step, 'ichi_conversion_line_8']/self.normalize_value,
+                 ])
+           
+    lookback_window_size = 12
+    test_window = 24 * 30    # 30 days
+
+    ## Training Section:
+    train_df = df[:-test_window-lookback_window_size]
+    agent = CustomAgent(lookback_window_size=lookback_window_size,
+                        learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24
+                                                        , model="Dense", state_size=10+5)
+    
+    total_average = deque(maxlen=2)
+    
+        self.punish_value += self.net_worth * 0.000002
+        
+        X = Flatten(input_shape=input_shape)(X_input)
+        X = Dense(512, activation="relu")(X)
+        X = Dense(256, activation="relu")(X)
+        X = Dense(64, activation="relu")(X)
+        output = Dense(self.action_space, activation="softmax")(X)
+        
+        V = Flatten(input_shape=input_shape)(X_input)
+        V = Dense(512, activation="relu")(V)
+        V = Dense(256, activation="relu")(V)
+        V = Dense(64, activation="relu")(V)
+        value = Dense(1, activation=None)(V)
+        

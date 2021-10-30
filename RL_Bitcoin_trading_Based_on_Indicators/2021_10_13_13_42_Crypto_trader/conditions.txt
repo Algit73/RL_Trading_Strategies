@@ -1,0 +1,40 @@
+
+
+Number of trains: 2000
+
+
+[                   self.df.loc[current_step, 'MACD_2'] / 100,
+                    self.df.loc[current_step, 'ichi_a_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_b_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_base_line_1']/self.normalize_value,
+                    self.df.loc[current_step, 'ichi_conversion_line_1']/self.normalize_value,
+
+                 ])
+
+ 
+self.punish_value += self.net_worth * 0.000002
+
+lookback_window_size = 12
+test_window = 24 * 30 # 30 days 
+test_df = df[-test_window:-test_window + 180]
+
+agent = CustomAgent(lookback_window_size=lookback_window_size,
+                        learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24
+                                                        , model="Dense", state_size=10+5)
+
+### CNN Model
+	V = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        V = MaxPooling1D(pool_size=2)(V)
+        V = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(V)
+        V = MaxPooling1D(pool_size=2)(V)
+        V = Flatten()(V)
+
+### CNN Model
+	A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
+        A = MaxPooling1D(pool_size=2)(A)
+        A = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(A)
+        A = MaxPooling1D(pool_size=2)(A)
+        A = Flatten()(A)
+
+lr = 0.0001  
+total_average = deque(maxlen=2)
