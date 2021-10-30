@@ -145,7 +145,7 @@ class TradingGraph:
         
         # Clear the frame rendered last step
         self.ax1.clear()
-        candlestick_ohlc(self.ax1, self.render_data, width=0.8/96, colorup='green', colordown='red', alpha=0.8)
+        candlestick_ohlc(self.ax1, self.render_data, width=0.8/90, colorup='green', colordown='red', alpha=0.8)
 
         # Put all dates to one list and fill ax2 sublot with volume
         Date_Render_range = [i[0] for i in self.render_data]
@@ -250,7 +250,7 @@ def Plot_OHCL(df):
     # Create bottom subplot for volume which shares its x-axis
     ax2 = plt.subplot2grid((6,1), (5,0), rowspan=1, colspan=1, sharex=ax1)
 
-    candlestick_ohlc(ax1, df.values, width=0.8/24, colorup='green', colordown='red', alpha=0.8)
+    candlestick_ohlc(ax1, df.values, width=0.8/96, colorup='green', colordown='red', alpha=0.8)
     ax1.set_ylabel('Price', fontsize=12)
     plt.xlabel('Date')
     plt.xticks(rotation=45)
