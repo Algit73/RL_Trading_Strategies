@@ -1,0 +1,1 @@
+15m TotalAverage=4 & Lookback=6
