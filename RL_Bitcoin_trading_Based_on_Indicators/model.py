@@ -63,19 +63,12 @@ class Shared_Model:
         X = LSTM(1)(X)'''
 
         ### CNN Model
-        #dropout_layer = Dropout(.2)
-        V = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
-        #V = Dropout(.1)(V)
+        V = Conv1D(filters=128, kernel_size=9, padding="same", activation="relu")(X_input)
         V = MaxPooling1D(pool_size=2)(V)
-        #V = Conv1D(filters=64, kernel_size=7, padding="same", activation="tanh")(X_input) #(V)
-        #V = MaxPooling1D(pool_size=2)(V)
-        #V = dropout_layer(V)
-        #V = Conv1D(filters=32, kernel_size=5, padding="same", activation="tanh")(V)
-        #V = MaxPooling1D(pool_size=2)(V)
-        V = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(V)
-        #V = Dropout(.1)(V)
+        V = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(V)
         V = MaxPooling1D(pool_size=2)(V)
-        #V = dropout_layer(V)
+        V = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(V)
+        V = MaxPooling1D(pool_size=2)(V)
         V = Flatten()(V)
 
         ###
@@ -113,18 +106,12 @@ class Shared_Model:
 
         ### CNN Model
         dropout_layer = Dropout(.1)
-        A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(X_input)
-        #A = Dropout(.2)(A)
+        A = Conv1D(filters=128, kernel_size=9, padding="same", activation="relu")(X_input)
         A = MaxPooling1D(pool_size=2)(A)
-        #A = Conv1D(filters=64, kernel_size=7, padding="same", activation="tanh")(X_input) #(A)
-        #A = MaxPooling1D(pool_size=2)(A)
-        #A = dropout_layer(A)
-        #A = Conv1D(filters=32, kernel_size=5, padding="same", activation="tanh")(A)
-        #A = MaxPooling1D(pool_size=2)(A)
-        A = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(A)
-        #A = Dropout(.1)(A)
+        A = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(A)
         A = MaxPooling1D(pool_size=2)(A)
-        #A = dropout_layer(A)
+        A = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(A)
+        A = MaxPooling1D(pool_size=2)(A)
         A = Flatten()(A)
 
         output = Dense(self.action_space, activation="softmax")(A) # A --> X
