@@ -63,7 +63,9 @@ class Shared_Model:
         X = LSTM(1)(X)'''
 
         ### CNN Model
-        V = Conv1D(filters=128, kernel_size=9, padding="same", activation="relu")(X_input)
+        V = Conv1D(filters=256, kernel_size=12, padding="same", activation="relu")(X_input)
+        V = MaxPooling1D(pool_size=2)(V)
+        V = Conv1D(filters=128, kernel_size=9, padding="same", activation="relu")(V)
         V = MaxPooling1D(pool_size=2)(V)
         V = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(V)
         V = MaxPooling1D(pool_size=2)(V)
@@ -106,7 +108,9 @@ class Shared_Model:
 
         ### CNN Model
         dropout_layer = Dropout(.1)
-        A = Conv1D(filters=128, kernel_size=9, padding="same", activation="relu")(X_input)
+        A = Conv1D(filters=256, kernel_size=12, padding="same", activation="relu")(X_input)
+        A = MaxPooling1D(pool_size=2)(A)
+        A = Conv1D(filters=128, kernel_size=9, padding="same", activation="relu")(A)
         A = MaxPooling1D(pool_size=2)(A)
         A = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(A)
         A = MaxPooling1D(pool_size=2)(A)
