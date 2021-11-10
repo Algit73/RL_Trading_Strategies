@@ -56,24 +56,24 @@ class Shared_Model:
         #value = Dense(1, activation=None)(V)'''
 
         ### LSTM Model
-        X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
+        '''X = LSTM(512, return_sequences=True, dropout=.2)(X_input)
         X = LSTM(256, return_sequences=True)(X)
         X = BatchNormalization()(X)
         X = Dense(256, activation="relu")(X)
-        X = LSTM(1)(X)
+        X = LSTM(1)(X)'''
 
         ### CNN Model
-        '''V = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
+        V = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
         V = MaxPooling1D(pool_size=2, padding='same')(V)
         V = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(V)
         V = MaxPooling1D(pool_size=2, padding='same')(V)
         V = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(V)
         V = MaxPooling1D(pool_size=2, padding='same')(V)
-        V = Flatten()(V) '''
+        V = Flatten()(V)
 
         ###
 
-        value = Dense(1, activation=None)(X)
+        value = Dense(1, activation=None)(V)
         self.Critic = Model(inputs=X_input, outputs = value) # value --> X
         self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(learning_rate=learning_rate))
 
@@ -99,22 +99,22 @@ class Shared_Model:
 
         ### LSTM Model
         #TODO : Adding Dropout
-        X = LSTM(512, return_sequences=True)(X_input)
+        '''X = LSTM(512, return_sequences=True)(X_input)
         X = LSTM(256, return_sequences=True)(X)
         X = Dense(256, activation="relu")(X)
-        X = LSTM(1)(X)
+        X = LSTM(1)(X)'''
 
         ### CNN Model
-        '''dropout_layer = Dropout(.1)
+        dropout_layer = Dropout(.1)
         A = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
         A = MaxPooling1D(pool_size=2, padding='same')(A)
         A = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(A)
         A = MaxPooling1D(pool_size=2, padding='same')(A)
         A = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(A)
         A = MaxPooling1D(pool_size=2, padding='same')(A)
-        A = Flatten()(A)'''
+        A = Flatten()(A)
 
-        output = Dense(self.action_space, activation="softmax")(X) # A --> X
+        output = Dense(self.action_space, activation="softmax")(A) # A --> X
 
         self.Actor = Model(inputs = X_input, outputs = output) 
         self.Actor.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
