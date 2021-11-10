@@ -73,7 +73,7 @@ class Shared_Model:
 
         ###
 
-        value = Dense(1, activation=None)(V)
+        value = Dense(1, activation=None)(X)
         self.Critic = Model(inputs=X_input, outputs = value) # value --> X
         self.Critic.compile(loss=self.critic_PPO2_loss, optimizer=optimizer(learning_rate=learning_rate))
 
@@ -114,7 +114,7 @@ class Shared_Model:
         A = MaxPooling1D(pool_size=2, padding='same')(A)
         A = Flatten()(A)'''
 
-        output = Dense(self.action_space, activation="softmax")(A) # A --> X
+        output = Dense(self.action_space, activation="softmax")(X) # A --> X
 
         self.Actor = Model(inputs = X_input, outputs = output) 
         self.Actor.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
