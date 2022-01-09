@@ -65,7 +65,7 @@ class Base_CNN:
         merged_layer = Concatenate([model.output for model in compiled_models])
         final_layer = Dense(action_space,  activations='softmax')(merged_layer)
         self.Base_Model = Model(inputs = [model.input for model in compiled_models], outputs = final_layer) 
-        self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+        return self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
 
     def ppo_loss(self, y_true, y_pred):
         # Defined in https://arxiv.org/abs/1707.06347
@@ -92,14 +92,6 @@ class Base_CNN:
         total_loss = agent_loss - entropy
 
         return total_loss
-
-    def fit(self, input, output):
-        val = []
-        for model in self.model:
-            model.fit()
-            val.appened(model.predict())
-        self.BaseModel.fit(val)
-        return self.BaseModel.predict()
         
 class Shared_Model:
     def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense"):

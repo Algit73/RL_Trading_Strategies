@@ -34,9 +34,9 @@ plt.figure(figsize=(10, 10))
 
 class CustomAgent:
     # A custom Bitcoin trading agent
-    def __init__(self, lookback_window_size=50, learning_rate=0.00005, epochs=1, optimizer=Adam, batch_size=32, model="",state_size=10):
+    def __init__(self, lookback_window_size=50, learning_rate=0.00005, epochs=1, optimizer=Adam, batch_size=32, models=[],state_size=10):
         self.lookback_window_size = lookback_window_size
-        self.model = model
+        self.models = models
 
         #TODO: -1,0,1 looks more clean
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
@@ -56,7 +56,7 @@ class CustomAgent:
         # TODO: add all base models
         ## Create Base network models
         self.Base = Base_CNN(
-            input_shape=self.state_size, action_space=self.action_space.shape[0], learning_rate = self.learning_rate, optimizer=self.optimizer, model=self.model)
+            input_shape=self.state_size, action_space=self.action_space.shape[0], learning_rate = self.learning_rate, optimizer=self.optimizer, models=self.models)
         
         ## Variables to keep the folder name and file name
         self.folder_name = ""
@@ -472,7 +472,7 @@ if __name__ == "__main__":
     train_df = df[:-test_window-lookback_window_size]
     agent = CustomAgent(lookback_window_size=lookback_window_size,
                         learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24
-                                                        , model="Dense", state_size=10+4)
+                                                        , models=["CNN_1","CNN_2"], state_size=10+4)
 
     train_env1 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
     train_env2 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
