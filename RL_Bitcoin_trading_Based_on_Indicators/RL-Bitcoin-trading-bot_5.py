@@ -17,7 +17,7 @@ from indicators import AddIndicators
 from datetime import datetime
 import matplotlib.pyplot as plt
 from utils import TradingGraph
-from model import Base_CNN, Shared_Model
+from model import Base_CNN, Critic_Model
 from tensorflow.keras.optimizers import Adam
 from collections import deque
 import random
@@ -41,9 +41,12 @@ class CustomAgent:
         self.lookback_window_size = lookback_window_size
         self.models = models
 
+
         #TODO: -1,0,1 looks more clean
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = np.array([0, 1, 2])
+
+        self.Critic = Critic_Model(self.state_size,self.action_space, learning_rate, optimizer)
 
         # folder to save models
         self.log_name = datetime.now().strftime("%Y_%m_%d_%H_%M")+"_Crypto_trader"
