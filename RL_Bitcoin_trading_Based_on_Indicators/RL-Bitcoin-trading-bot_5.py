@@ -23,9 +23,12 @@ from collections import deque
 import random
 import numpy as np
 import pandas as pd
+import inspect
 import copy
 import os
 from icecream import ic
+import re
+from numpy.core.numeric import NaN
 
 #import yfinance as yf
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -84,6 +87,32 @@ class CustomAgent:
         with open(self.log_name+"/Parameters.txt", "a+") as params:
             current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
             params.write(f"training end: {current_date}\n")
+
+    def write_conditions(self):
+        with open(self.log_name+"/Conditions.txt", "w") as conditions:
+          indicators = inspect.getsource(CustomEnv.reset)
+          indicators = indicators.split("# ____This is a Seperator not a comment____")
+          conditions.write(indicators[1])
+
+          main_code = inspect.getsource(main)
+          main_code = main_code.split("# ____This is a Seperator not a comment____")
+          conditions.write(main_code[1])
+
+          train_agent_code = inspect.getsource(train_agent)
+          train_agent_code = train_agent_code.split("# ____This is a Seperator not a comment____")
+          conditions.write(train_agent_code[1])
+
+          punishment = inspect.getsource(CustomEnv.get_reward)
+          punishment = punishment.split("# ____This is a Seperator not a comment____")
+          conditions.write(punishment[1])
+
+        #   Actor = inspect.getsource(Actor_Model)
+        #   Actor = Actor.split("# ____This is a Seperator not a comment____")
+        #   conditions.write(Actor[1])
+          
+        #   Critic = inspect.getsource(Critic_Model)
+        #   Critic = Critic.split("# ____This is a Seperator not a comment____")
+        #   conditions.write(Critic[1])
 
     # TODO: Th is this?
     def get_gaes(self, rewards, dones, values, next_values, gamma=0.99, lamda=0.95, normalize=True):
@@ -481,7 +510,8 @@ if __name__ == "__main__":
     train_agent(train_envs, agent, visualize=False,
               train_episodes=2000, training_batch_size=500)
     
-
+    agent.write_conditions()
+    
     ## Testing Section:
     test_df = df[-test_window:-test_window + 180]
     ic(test_df[['Open','Close']])   # Depicting the specified Time-period
