@@ -7,7 +7,7 @@
 #   GitHub      : https://github.com/pythonlessons/RL-Bitcoin-trading-bot
 #   Description : Trading Crypto with Reinforcement Learning #5
 #
-#   Code revised by: Alireza Alikhani
+#   Code revised by: Alireza Alikhani, Sana Rastgar
 #   Email       : alireza.alikhani@outlook.com 
 #   Version     : 1.0.1
 #
@@ -16,10 +16,9 @@
 from indicators import AddIndicators
 from datetime import datetime
 import matplotlib.pyplot as plt
-from utils import TradingGraph, Write_to_file, Plot_OHCL
-from model import Actor_Model, Critic_Model, Shared_Model
-from tensorflow.keras.optimizers import Adam, RMSprop
-from tensorboardX import SummaryWriter
+from utils import TradingGraph
+from model import Base_CNN, Shared_Model
+from tensorflow.keras.optimizers import Adam
 from collections import deque
 import random
 import numpy as np
@@ -27,15 +26,11 @@ import pandas as pd
 import copy
 import os
 from icecream import ic
-import re
-from numpy.core.numeric import NaN
+
 #import yfinance as yf
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-# np.random.seed(42)
-# random.seed(42)
 
 plt.figure(figsize=(10, 10))
-
 
 class CustomAgent:
     # A custom Bitcoin trading agent
@@ -43,19 +38,13 @@ class CustomAgent:
         self.lookback_window_size = lookback_window_size
         self.model = model
 
+        #TODO: -1,0,1 looks more clean
         # Action space from 0 to 3, 0 is hold, 1 is buy, 2 is sell
         self.action_space = np.array([0, 1, 2])
 
         # folder to save models
         self.log_name = datetime.now().strftime("%Y_%m_%d_%H_%M")+"_Crypto_trader"
-        ic(self.log_name)
 
-        ## State size contains Market+Orders history for the last lookback_window_size steps
-        ## 10 standard information +9 indicators
-        ## Original state:
-        # self.state_size = (lookback_window_size, 10+9) # 10 standard information +9 indicators
-
-        
         self.state_size = (lookback_window_size, state_size)
 
         # Neural Networks part bellow
@@ -64,32 +53,17 @@ class CustomAgent:
         self.optimizer = optimizer
         self.batch_size = batch_size
 
-        ## Create shared Actor-Critic network model
-        self.Actor = self.Critic = Shared_Model(
+        # TODO: add all base models
+        ## Create Base network models
+        self.Base = Base_CNN(
             input_shape=self.state_size, action_space=self.action_space.shape[0], learning_rate = self.learning_rate, optimizer=self.optimizer, model=self.model)
-        # Create Actor-Critic network model
-        #self.Actor = Actor_Model(input_shape=self.state_size, action_space = self.action_space.shape[0], learning_rate=self.learning_rate, optimizer = self.optimizer)
-        #self.Critic = Critic_Model(input_shape=self.state_size, action_space = self.action_space.shape[0], learning_rate=self.learning_rate, optimizer = self.optimizer)
         
         ## Variables to keep the folder name and file name
         self.folder_name = ""
         self.file_name = ""
 
     def get_folder_name(self):
-        ic(self.log_name)
         return self.log_name
-    # create tensorboard writer
-    def create_writer(self, initial_balance, normalize_value, train_episodes):
-        self.replay_count = 0
-        self.writer = SummaryWriter('runs/'+self.log_name)
-
-        # Create folder to save models
-        if not os.path.exists(self.log_name):
-            os.makedirs(self.log_name)
-            # global save_folder = self.log_name
-
-        self.start_training_log(
-            initial_balance, normalize_value, train_episodes)
 
     def start_training_log(self, initial_balance, normalize_value, train_episodes):
         # save training parameters to Parameters.txt file for future
@@ -111,6 +85,7 @@ class CustomAgent:
             current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
             params.write(f"training end: {current_date}\n")
 
+    # TODO: Th is this?
     def get_gaes(self, rewards, dones, values, next_values, gamma=0.99, lamda=0.95, normalize=True):
         deltas = [r + gamma * (1 - d) * nv - v for r, d,
                   nv, v in zip(rewards, dones, next_values, values)]
@@ -142,37 +117,29 @@ class CustomAgent:
         ## stack everything to numpy array
         y_true = np.hstack([advantages, predictions, actions])
 
+        # TODO: fit all base models (?)
         ## training Actor and Critic networks
-        a_loss = self.Actor.Actor.fit(
+        History = self.Base.fit(
             states, y_true, epochs=self.epochs, verbose=0, shuffle=True, batch_size=self.batch_size)
-        c_loss = self.Critic.Critic.fit(
-            states, target, epochs=self.epochs, verbose=0, shuffle=True, batch_size=self.batch_size)
 
-        self.writer.add_scalar('Data/actor_loss_per_replay',
-                               np.sum(a_loss.history['loss']), self.replay_count)
-        self.writer.add_scalar('Data/critic_loss_per_replay',
-                               np.sum(c_loss.history['loss']), self.replay_count)
-        self.replay_count += 1
+        return History.history['loss']
 
-        return np.sum(a_loss.history['loss']), np.sum(c_loss.history['loss'])
-
-    def act(self, state):
+    def act(self, states):
         # Use the network to predict the next action to take, using the model
 
-        prediction = self.Actor.actor_predict(np.expand_dims(state, axis=0))[0]
-        # if  np.isnan(prediction).any():
-        #   prediction = np.ones(len(prediction))
+        # TODO: gather all predictions (?)
+        prediction = self.Base.predict(np.expand_dims(states, axis=0))[0]
         action = np.random.choice(self.action_space, p=prediction)
         return action, prediction
 
     def save(self, name="Crypto_trader", score="", args=[]):
         # save keras model weights
+        # TODO: Save all base models and overall model (?)
         self.file_name = f"{self.log_name}/{score}_{name}"
-        self.Actor.Actor.save_weights(
-            f"{self.log_name}/{score}_{name}_Actor.h5")
-        self.Critic.Critic.save_weights(
-            f"{self.log_name}/{score}_{name}_Critic.h5")
+        self.Base.save_weights(
+            f"{self.log_name}/{score}_{name}.h5")
 
+        # TODO: Does this matter?
         # log saved model arguments to file
         if len(args) > 0:
             with open(f"{self.log_name}/log.txt", "a+") as log:
@@ -183,19 +150,16 @@ class CustomAgent:
                 log.write(f"{current_time}{atgumets}\n")
 
     def get_file_name(self):
-        ic(self.file_name)
         return self.file_name
     
     def load(self, folder, name):
         # load keras model weights
-        self.Actor.Actor.load_weights(os.path.join(folder, f"{name}_Actor.h5"))
-        self.Critic.Critic.load_weights(
-            os.path.join(folder, f"{name}_Critic.h5"))
+        self.Base.load_weights(os.path.join(folder, f"{name}.h5"))
 
 
 class CustomEnv:
     # A custom Bitcoin trading environment
-    def __init__(self, df, initial_balance=1000, lookback_window_size=50, Render_range=100, Show_reward=False, Show_indicators=False, normalize_value=40000):
+    def __init__(self, df, initial_balance=1000, lookback_window_size=50, Render_range=100, Show_reward=False, Show_indicators=False, normalize_value=40000, indicator_index='MACD_1'):
         # Define action space and state size and other custom parameters
         self.df = df.dropna().reset_index()
         self.df_total_steps = len(self.df) - 1
@@ -206,23 +170,50 @@ class CustomEnv:
         # show main indicators in rendered visualization
         self.Show_indicators = Show_indicators
         
-
         # Orders history contains the balance, net_worth, crypto_bought, crypto_sold, crypto_held values for the last lookback_window_size steps
         self.orders_history = deque(maxlen=self.lookback_window_size)
 
+        # TODO: these can be deleted
         # Market history contains the OHCL values for the last lookback_window_size prices
         self.market_history = deque(maxlen=self.lookback_window_size)
 
         self.indicators_history = deque(maxlen=self.lookback_window_size)
 
         self.normalize_value = normalize_value
+        self.indicator_index = indicator_index
+        self.indicator_indexes = {
+            'MACD_1': 400,
+            'MACD_4': 100,
+            'MACD_2': 100,
+            'psar_1': 1000,
+            'psar_2': 40000,
+            'psar_4': 40000,
+            'psar_8': 40000,
+            'ATR_2': 100,
+            'ATR_4': 100,
+            'bb_bbh_1': 40000,
+            'bb_bbl_1': 40000,
+            'bb_bbm_1': 40000,
+            'bb_bbh_2': 40000,
+            'bb_bbl_2': 40000,
+            'bb_bbm_2': 40000,
+            'bb_bbh_4': 40000,
+            'bb_bbl_4': 40000,
+            'bb_bbm_4': 40000,
+            'ADX_1': 40,
+            'RSI_1': 80,
+            'ichi_a_1': 40000,
+            'ichi_b_1': 40000,
+            'ichi_base_line_1': 40000,
+            'ichi_conversion_line_1': 40000,
+
+        }
 
     # Reset the state of the environment to an initial state
     def reset(self, env_steps_size=0):
         self.visualization = TradingGraph(Render_range=180, Show_reward=self.Show_reward,
                                           Show_indicators=self.Show_indicators)  # init visualization
         # limited orders memory for visualization
-        #self.trades = deque(maxlen=self.Render_range)
         self.trades = deque(maxlen=180)
 
         self.balance = self.initial_balance
@@ -250,7 +241,8 @@ class CustomEnv:
             current_step = self.current_step - i
             self.orders_history.append(
                 [self.balance, self.net_worth, self.crypto_bought, self.crypto_sold, self.crypto_held])
-
+            
+            # TODO: these can be deleted
             self.market_history.append([self.df.loc[current_step, 'Open'],
                                         self.df.loc[current_step, 'High'],
                                         self.df.loc[current_step, 'Low'],
@@ -261,38 +253,17 @@ class CustomEnv:
 
             self.indicators_history.append(
                 [
-                    #self.df.loc[current_step, 'MACD_1'] / 400,
-                    #self.df.loc[current_step, 'MACD_4'] / 100,
-                    #self.df.loc[current_step, 'MACD_2'] / 100,
-                    #self.df.loc[current_step, 'psar_1'] / 1000,
-                    #self.df.loc[current_step, 'psar_2'] / 40000,
-                    #self.df.loc[current_step, 'psar_4'] / 40000,
-                    #self.df.loc[self.current_step, 'psar_8'] / 40000,
-                    #self.df.loc[current_step, 'ATR_2']/100,
-                    #self.df.loc[current_step, 'ATR_4']/100
-                    #self.df.loc[current_step, 'bb_bbh_1']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbl_1']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbm_1']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbh_2']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbl_2']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbm_2']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbh_4']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbl_4']/self.normalize_value,
-                    #self.df.loc[current_step, 'bb_bbm_4']/self.normalize_value
-                    #self.df.loc[current_step, 'ADX_1']/40,
-                    #self.df.loc[current_step, 'RSI_1']/80,
-                    self.df.loc[current_step, 'ichi_a_1']/self.normalize_value,
-                    self.df.loc[current_step, 'ichi_b_1']/self.normalize_value,
-                    self.df.loc[current_step, 'ichi_base_line_1']/self.normalize_value,
-                    self.df.loc[current_step, 'ichi_conversion_line_1']/self.normalize_value,
+                    self.df.loc[current_step, self.indicator_index]/self.indicator_indexes[self.indicator_index],
                  ])
 
+        # TODO: change these accordingly
         state = np.concatenate(
             (self.market_history, self.orders_history), axis=1) / self.normalize_value
         state = np.concatenate((state, self.indicators_history), axis=1)
 
         return state
 
+    # TODO: these can be deleted
     # Get the data points for the given current_step
     def _next_observation(self):
         self.market_history.append([self.df.loc[self.current_step, 'Open'],
@@ -302,31 +273,9 @@ class CustomEnv:
                                     self.df.loc[self.current_step, 'Volume'],
                                     ])
 
-        self.indicators_history.append(
+        self.indicators_history.append( 
                 [
-                    #self.df.loc[self.current_step, 'MACD_1'] / 400,
-                    #self.df.loc[self.current_step, 'MACD_4'] / 100,
-                    #self.df.loc[self.current_step, 'MACD_2'] / 100,
-                    #self.df.loc[self.current_step, 'psar_1'] / 1000,
-                    #self.df.loc[self.current_step, 'psar_2'] / 40000,
-                    #self.df.loc[self.current_step, 'psar_4'] / 40000,
-                    #self.df.loc[self.current_step, 'psar_8'] / 40000,
-                    #self.df.loc[self.current_step, 'ATR_2']/100,
-                    #self.df.loc[self.current_step, 'ATR_4']/100
-                    #self.df.loc[self.current_step, 'bb_bbh_1']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbl_1']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbm_1']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbh_2']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbl_2']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbm_2']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbh_4']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbl_4']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'bb_bbm_4']/self.normalize_value,
-                    #self.df.loc[self.current_step, 'ADX_1']/80,
-                    self.df.loc[self.current_step, 'ichi_a_1']/self.normalize_value,
-                    self.df.loc[self.current_step, 'ichi_b_1']/self.normalize_value,
-                    self.df.loc[self.current_step, 'ichi_base_line_1']/self.normalize_value,
-                    self.df.loc[self.current_step, 'ichi_conversion_line_1']/self.normalize_value,
+                    self.df.loc[self.current_step, self.indicator_index]/self.indicator_indexes[self.indicator_index]
                  ])
 
         obs = np.concatenate(
@@ -341,12 +290,14 @@ class CustomEnv:
         self.crypto_sold = 0
         self.current_step += 1
 
+        # TODO: these can be deleted
         ## Set the current price to Open
         current_price = self.df.loc[self.current_step, 'Open']
         Date = self.df.loc[self.current_step, 'Date']  # for visualization
         High = self.df.loc[self.current_step, 'High']  # for visualization
         Low = self.df.loc[self.current_step, 'Low']  # for visualization
 
+        # TODO: -1,0,1 if it's not classification/ or even string maybe (?)
         if action == 0:  # Hold
             pass
 
@@ -414,59 +365,28 @@ class CustomEnv:
 
     # render environment
     def render(self, visualize=False):
-        #print(f'Step: {self.current_step}, Net Worth: {self.net_worth}')
         if visualize:
             ## Render the environment to the screen (inside utils.py file)
             img = self.visualization.render(
                 self.df.loc[self.current_step], self.net_worth, self.trades)
             return img
 
+def train_agent(envs, agent, visualize=False, train_episodes=50, training_batch_size=500):
+    initial_balance = 1000
+    normalize_value = 40000
+    # agent.create_writer(initial_balance, normalize_value,
+    #                     train_episodes)  # create TensorBoard writer
 
-def Random_games(env, visualize, test_episodes=50, comment=""):
-    average_net_worth = 0
-    average_orders = 0
-    no_profit_episodes = 0
-    for episode in range(test_episodes):
-        state = env.reset()
-        while True:
-            env.render(visualize)
-            action = np.random.randint(3, size=1)[0]
-            state, reward, done = env.step(action)
-            if env.current_step == env.end_step:
-                average_net_worth += env.net_worth
-                average_orders += env.episode_orders
-                if env.net_worth < env.initial_balance:
-                    # calculate episode count where we had negative profit through episode
-                    no_profit_episodes += 1
-                print("episode: {}, net_worth: {}, average_net_worth: {}, orders: {}".format(
-                    episode, env.net_worth, average_net_worth/(episode+1), env.episode_orders))
-                break
-
-    print("average {} episodes random net_worth: {}, orders: {}".format(
-        test_episodes, average_net_worth/test_episodes, average_orders/test_episodes))
-    ## save test results to test_results.txt file
-    with open("test_results.txt", "a+") as results:
-        current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
-        results.write(
-            f'{current_date}, {"Random games"}, test episodes:{test_episodes}')
-        results.write(
-            f', net worth:{average_net_worth/(episode+1)}, orders per episode:{average_orders/test_episodes}')
-        results.write(
-            f', no profit episodes:{no_profit_episodes}, comment: {comment}\n')
-
-
-def train_agent(env, agent, visualize=False, train_episodes=50, training_batch_size=500):
-    agent.create_writer(env.initial_balance, env.normalize_value,
-                        train_episodes)  # create TensorBoard writer
-    ## save n recent (maxlen=n) episodes net worth
     total_average = deque(maxlen=2)  
     best_average = 0  # used to track best average net worth
     for episode in range(train_episodes):
-        state = env.reset(env_steps_size=training_batch_size)
+        states 
+        for env in envs:
+            state = env.reset(env_steps_size=training_batch_size)
 
         states, actions, rewards, predictions, dones, next_states = [], [], [], [], [], []
         for t in range(training_batch_size):
-            env.render(visualize)
+            # env.render(visualize)
             action, prediction = agent.act(state)
             next_state, reward, done = env.step(action)
             states.append(np.expand_dims(state, axis=0))
@@ -479,7 +399,7 @@ def train_agent(env, agent, visualize=False, train_episodes=50, training_batch_s
             predictions.append(prediction)
             state = next_state
 
-        a_loss, c_loss = agent.replay(
+        History = agent.replay(
             states, actions, rewards, predictions, dones, next_states)
 
         total_average.append(env.net_worth)
@@ -554,8 +474,11 @@ if __name__ == "__main__":
                         learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24
                                                         , model="Dense", state_size=10+4)
 
-    train_env = CustomEnv(train_df, lookback_window_size=lookback_window_size)
-    train_agent(train_env, agent, visualize=False,
+    train_env1 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
+    train_env2 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
+
+    train_envs = [train_env1, train_env2]
+    train_agent(train_envs, agent, visualize=False,
               train_episodes=2000, training_batch_size=500)
     
 

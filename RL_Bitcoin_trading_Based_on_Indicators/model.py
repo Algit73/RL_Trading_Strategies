@@ -15,9 +15,10 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization, Dropout
+from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization, Dropout, Concatenate
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.backend import dropout
+from copy import deepcopy
 #tf.config.experimental_run_functions_eagerly(True) # used for debuging and development
 tf.compat.v1.disable_eager_execution() # usually using this for fastest performance
 
@@ -26,7 +27,80 @@ if len(gpus) > 0:
     print(f'GPUs {gpus}')
     try: tf.config.experimental.set_memory_growth(gpus[0], True)
     except RuntimeError: pass
+class Base_CNN:
+    def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense", models = []):
+        X_input = Input(input_shape)
+        self.action_space = action_space
 
+        CNN_1 = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
+        CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
+        CNN_1 = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(CNN_1)
+        CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
+        CNN_1 = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(CNN_1)
+        CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
+        CNN_1 = Flatten()(CNN_1)
+        CNN_1_output = Dense(self.action_space, activation="softmax")(CNN_1)
+
+        CNN_2 = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
+        CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
+        CNN_2 = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(CNN_2)
+        CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
+        CNN_2 = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(CNN_2)
+        CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
+        CNN_2 = Flatten()(CNN_2)
+        CNN_2_output = Dense(self.action_space, activation="softmax")(CNN_2)
+
+        models_list = {
+            'CNN_1': CNN_1_output,
+            'CNN_2': CNN_2_output
+        }
+
+        compiled_models = []
+
+        for model in models:
+            temp = Model(inputs = X_input, outputs = models_list[model])
+            temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+            compiled_models.append(deepcopy(temp))
+
+        merged_layer = Concatenate([model.output for model in compiled_models])
+        final_layer = Dense(action_space,  activations='softmax')(merged_layer)
+        self.Base_Model = Model(inputs = [model.input for model in compiled_models], outputs = final_layer) 
+        self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+
+    def ppo_loss(self, y_true, y_pred):
+        # Defined in https://arxiv.org/abs/1707.06347
+        advantages, prediction_picks, actions = y_true[:, :1], y_true[:, 1:1+self.action_space], y_true[:, 1+self.action_space:]
+        LOSS_CLIPPING = 0.2
+        ENTROPY_LOSS = 0.001
+        
+        prob = actions * y_pred
+        old_prob = actions * prediction_picks
+
+        prob = K.clip(prob, 1e-10, 1.0)
+        old_prob = K.clip(old_prob, 1e-10, 1.0)
+
+        ratio = K.exp(K.log(prob) - K.log(old_prob))
+        
+        p1 = ratio * advantages
+        p2 = K.clip(ratio, min_value=1 - LOSS_CLIPPING, max_value=1 + LOSS_CLIPPING) * advantages
+
+        agent_loss = -K.mean(K.minimum(p1, p2))
+
+        entropy = -(y_pred * K.log(y_pred + 1e-10))
+        entropy = ENTROPY_LOSS * K.mean(entropy)
+        
+        total_loss = agent_loss - entropy
+
+        return total_loss
+
+    def fit(self, input, output):
+        val = []
+        for model in self.model:
+            model.fit()
+            val.appened(model.predict())
+        self.BaseModel.fit(val)
+        return self.BaseModel.predict()
+        
 class Shared_Model:
     def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense"):
         X_input = Input(input_shape)
@@ -155,8 +229,7 @@ class Shared_Model:
 
     def critic_predict(self, state):
         return self.Critic.predict([state, np.zeros((state.shape[0], 1))])
-
-        
+       
 class Actor_Model:
     def __init__(self, input_shape, action_space, lr, optimizer):
         X_input = Input(input_shape)
