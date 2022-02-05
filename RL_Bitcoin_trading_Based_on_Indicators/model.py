@@ -1,24 +1,12 @@
-#================================================================
-#
-#   File name   : model.py
-#   Author      : PyLessons
-#   Created date: 2021-01-13
-#   Website     : https://pylessons.com/
-#   GitHub      : https://github.com/pythonlessons/RL-Bitcoin-trading-bot
-#   Description : defined PPO Keras model classes
-#
-#
-#   Code revised by: Alireza Alikhani
-#   Email       : alireza.alikhani@outlook.com 
-#
-#================================================================
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization, Dropout, Concatenate
+from keras.layers.merge import concatenate
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.backend import dropout
 from copy import deepcopy
+from time import sleep
 #tf.config.experimental_run_functions_eagerly(True) # used for debuging and development
 tf.compat.v1.disable_eager_execution() # usually using this for fastest performance
 
@@ -28,10 +16,33 @@ if len(gpus) > 0:
     try: tf.config.experimental.set_memory_growth(gpus[0], True)
     except RuntimeError: pass
 class Base_CNN:
-    def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense", models = []):
-        X_input = Input(input_shape)
+    def __init__(self, input_shapes, action_space, learning_rate, optimizer, models = []):
+
         self.action_space = action_space
 
+        models_list = {
+            'CNN_1': self.gen_cnn_1,
+            'CNN_2': self.gen_cnn_2
+        }
+
+        compiled_models = []
+
+
+        for i, model in enumerate(models):
+            sleep(3)
+            temp = models_list[model](input_shape = tuple(input_shapes[i]), output = action_space)
+            # temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+            compiled_models.append(temp)
+
+        # merged_layer = concatenate(axis=1)([model.output for model in compiled_models])
+        merged_layer = Concatenate(axis=-1)([model.output for model in compiled_models])
+        final_layer = Dense(action_space, activation='softmax')(merged_layer)
+        self.Base_Model = Model(inputs = [model.input for model in compiled_models], outputs = final_layer) 
+        self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+    
+    
+    def gen_cnn_1(self, input_shape, output):
+        X_input = Input(input_shape)
         CNN_1 = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
         CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
         CNN_1 = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(CNN_1)
@@ -39,8 +50,12 @@ class Base_CNN:
         CNN_1 = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(CNN_1)
         CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
         CNN_1 = Flatten()(CNN_1)
-        CNN_1_output = Dense(self.action_space, activation="softmax")(CNN_1)
+        CNN_1_output = Dense(output, activation="softmax")(CNN_1)
+        return Model(inputs = X_input, outputs = CNN_1_output)
 
+
+    def gen_cnn_2(self, input_shape, output):
+        X_input = Input(input_shape)
         CNN_2 = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
         CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
         CNN_2 = Conv1D(filters=64, kernel_size=6, padding="same", activation="relu")(CNN_2)
@@ -48,24 +63,9 @@ class Base_CNN:
         CNN_2 = Conv1D(filters=32, kernel_size=3, padding="same", activation="relu")(CNN_2)
         CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
         CNN_2 = Flatten()(CNN_2)
-        CNN_2_output = Dense(self.action_space, activation="softmax")(CNN_2)
+        CNN_2_output = Dense(output, activation="softmax")(CNN_2)
+        return Model(inputs = X_input, outputs = CNN_2_output)
 
-        models_list = {
-            'CNN_1': CNN_1_output,
-            'CNN_2': CNN_2_output
-        }
-
-        compiled_models = []
-
-        for model in models:
-            temp = Model(inputs = X_input, outputs = models_list[model])
-            temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
-            compiled_models.append(deepcopy(temp))
-
-        merged_layer = Concatenate([model.output for model in compiled_models])
-        final_layer = Dense(action_space,  activations='softmax')(merged_layer)
-        self.Base_Model = Model(inputs = [model.input for model in compiled_models], outputs = final_layer) 
-        return self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
 
     def ppo_loss(self, y_true, y_pred):
         # Defined in https://arxiv.org/abs/1707.06347
@@ -92,7 +92,12 @@ class Base_CNN:
         total_loss = agent_loss - entropy
 
         return total_loss
-        
+    
+
+    def predict(self, states):
+        return self.Base_Model.predict(list(states))
+
+
 class Shared_Model:
     def __init__(self, input_shape, action_space, learning_rate, optimizer, model="Dense"):
         X_input = Input(input_shape)
@@ -288,4 +293,6 @@ class Critic_Model:
         return value_loss
 
     def critic_predict(self, state):
-        return self.Critic.predict([state, np.zeros((state.shape[0], 1))])
+        # return self.Critic.predict([state, np.zeros((state.shape[0], 1))])
+        # print(self.Critic.input)
+        return self.Critic.predict(state)

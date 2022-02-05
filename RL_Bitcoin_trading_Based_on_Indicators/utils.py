@@ -19,7 +19,7 @@ import matplotlib.dates as mpl_dates
 from datetime import datetime
 import os
 import cv2
-from google.colab.patches import cv2_imshow
+#from google.colab.patches import cv2_imshow
 import numpy as np
 from icecream import ic
 
