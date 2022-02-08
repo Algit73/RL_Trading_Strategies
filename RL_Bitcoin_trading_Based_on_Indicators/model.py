@@ -1,12 +1,15 @@
+from distutils.sysconfig import customize_compiler
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization, Dropout, Concatenate
+from tensorflow.keras.optimizers import Adam
 from keras.layers.merge import concatenate
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.backend import dropout
 from copy import deepcopy
 from time import sleep
+from os.path import isfile
 #tf.config.experimental_run_functions_eagerly(True) # used for debuging and development
 tf.compat.v1.disable_eager_execution() # usually using this for fastest performance
 
@@ -25,23 +28,27 @@ class Base_CNN:
             'CNN_2': self.gen_cnn_2
         }
 
-        compiled_models = []
+        self.models = []
 
 
         for i, model in enumerate(models):
-            sleep(3)
-            temp = models_list[model](input_shape = tuple(input_shapes[i]), output = action_space)
-            # temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
-            compiled_models.append(temp)
+            sleep(1)
+            if model not in models_list:
+                self.models.append({'model': self.load_custom_model(model), 'fit': True})
+            else:
+                temp = models_list[model](input_shape = tuple(input_shapes[i]), output = action_space)
+                # temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+                self.models.append({'model': temp, 'fit': False})
 
         # merged_layer = concatenate(axis=1)([model.output for model in compiled_models])
-        merged_layer = Concatenate(axis=-1)([model.output for model in compiled_models])
-        final_layer = Dense(action_space, activation='softmax')(merged_layer)
-        self.Base_Model = Model(inputs = [model.input for model in compiled_models], outputs = final_layer) 
+        # merged_layer = Concatenate(axis=-1)([model.output for model in self.models])
+        final_input = Input(shape=action_space * len(models))
+        final_layer = Dense(action_space, activation='softmax')(final_input)
+        self.Base_Model = Model(inputs = final_input, outputs = final_layer) 
         self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
     
     
-    def gen_cnn_1(self, input_shape, output):
+    def gen_cnn_1(self, input_shape, output, optimizer=Adam, learning_rate=0.00005):
         X_input = Input(input_shape)
         CNN_1 = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
         CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
@@ -51,10 +58,12 @@ class Base_CNN:
         CNN_1 = MaxPooling1D(pool_size=2, padding='same')(CNN_1)
         CNN_1 = Flatten()(CNN_1)
         CNN_1_output = Dense(output, activation="softmax")(CNN_1)
-        return Model(inputs = X_input, outputs = CNN_1_output)
+        temp = Model(inputs = X_input, outputs = CNN_1_output)
+        temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+        return temp
 
 
-    def gen_cnn_2(self, input_shape, output):
+    def gen_cnn_2(self, input_shape, output, optimizer=Adam, learning_rate=0.00005):
         X_input = Input(input_shape)
         CNN_2 = Conv1D(filters=256, kernel_size=9, padding="same", activation="relu")(X_input)
         CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
@@ -64,9 +73,27 @@ class Base_CNN:
         CNN_2 = MaxPooling1D(pool_size=2, padding='same')(CNN_2)
         CNN_2 = Flatten()(CNN_2)
         CNN_2_output = Dense(output, activation="softmax")(CNN_2)
-        return Model(inputs = X_input, outputs = CNN_2_output)
+        temp = Model(inputs = X_input, outputs = CNN_2_output)
+        temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
+        return temp
+    
+    def load_custom_model(self, input_file):
+        if not isfile(input_file):
+            raise Exception(f'file {input_file} doesn\'t exists')
+        return load_model(input_file)
 
-
+    def fit(self, inputs, target, epochs, verbose=0, shuffle=True, batch_size=64):
+        inputs = np.array(inputs)
+        for i, model in enumerate(self.models):
+            # print(f'fittin model {i} of {len(self.models)}')
+            if not model['fit']:
+                model['model'].fit(inputs[i], target, epochs=epochs, verbose=verbose, shuffle=shuffle, batch_size=batch_size)
+        temp_output = np.empty((inputs.shape[1], 0))
+        for i,model in enumerate(self.models):
+            temp_output = np.append(temp_output, model['model'].predict(inputs[i]), axis=1)
+        return self.Base_Model.fit(temp_output, target, epochs=epochs, verbose=verbose, shuffle=shuffle, batch_size=batch_size)
+        
+        
     def ppo_loss(self, y_true, y_pred):
         # Defined in https://arxiv.org/abs/1707.06347
         advantages, prediction_picks, actions = y_true[:, :1], y_true[:, 1:1+self.action_space], y_true[:, 1+self.action_space:]
@@ -95,7 +122,12 @@ class Base_CNN:
     
 
     def predict(self, states):
-        return self.Base_Model.predict(list(states))
+        temp_output = np.array([[] for _ in range(len(self.models))])
+        for i in self.models:
+            # temp_output = np.column_stack((temp_output, i['model'].predict(states)))
+            temp_output = np.append(temp_output, i['model'].predict(states), axis=1)
+        return self.Base_Model.predict(temp_output)
+        # return self.Base_Model.predict(list(states))
 
 
 class Shared_Model:

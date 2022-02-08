@@ -142,7 +142,10 @@ class CustomAgent:
         ## training Actor and Critic networks
         critic_history = self.Critic.Critic.fit(states, target, epochs=self.epochs, verbose=0, shuffle=True, batch_size=self.batch_size)
 
-        History = self.Base.Base_Model.fit(
+        # History = self.Base.Base_Model.fit(
+        #     [states for _ in range(len(self.models))], y_true, epochs=self.epochs, verbose=0, shuffle=True, batch_size=self.batch_size)
+        
+        History = self.Base.fit(
             [states for _ in range(len(self.models))], y_true, epochs=self.epochs, verbose=0, shuffle=True, batch_size=self.batch_size)
 
         return History.history['loss']
@@ -151,7 +154,8 @@ class CustomAgent:
         # Use the network to predict the next action to take, using the model
 
         # TODO: gather all predictions (?)
-        prediction = self.Base.predict(np.expand_dims(states, axis=1))[0]
+        # prediction = self.Base.predict(np.expand_dims(states, axis=1))[0]
+        prediction = self.Base.predict(np.array(states))[0]
         action = np.random.choice(self.action_space, p=prediction)
         return action, prediction
 
@@ -522,16 +526,16 @@ if __name__ == "__main__":
     train_env2 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
 
     train_envs = [train_env1, train_env2]
-    # train_agent(train_envs, agent, visualize=False,
-    #           train_episodes=2000, training_batch_size=500)
+    train_agent(train_envs, agent, visualize=False,
+              train_episodes=2000, training_batch_size=500)
     
     # agent.write_conditions()
     
     ## Testing Section:
-    test_df = df[:-test_window]
-    ic(test_df[['Open','Close']])   # Depicting the specified Time-period
-    test_env1 = CustomEnv(test_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
-    test_env2 = CustomEnv(test_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
-    test_agent([test_env1, test_env2], agent, visualize=True, test_episodes=100,
-               folder="2022_02_03_11_47_Crypto_trader", name="2282.63_Crypto_trader", comment="")
+    # test_df = df[:-test_window]
+    # ic(test_df[['Open','Close']])   # Depicting the specified Time-period
+    # test_env1 = CustomEnv(test_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
+    # test_env2 = CustomEnv(test_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
+    # test_agent([test_env1, test_env2], agent, visualize=True, test_episodes=100,
+    #            folder="2022_02_07_22_24_Crypto_trader", name="2349.45_Crypto_trader", comment="")
 
