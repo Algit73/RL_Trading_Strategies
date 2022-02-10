@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from utils import TradingGraph
 from model import Base_CNN, Critic_Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import load_model
 from collections import deque
 import random
 import numpy as np
@@ -164,8 +165,13 @@ class CustomAgent:
         # TODO: Save all base models and overall model (?)
         self.file_name = f"{self.log_name}/{score}_{name}"
         Path(self.log_name).mkdir(parents=True, exist_ok=True)
-        self.Base.Base_Model.save_weights( 
-            f"{self.log_name}/{score}_{name}.h5")
+        
+        for i in range(len(self.Base.models)):
+            self.Base.models[i]['model'].save(f"{self.file_name}_{i}")
+        self.Base.Base_Model.save(f"{self.file_name}_metalearner")
+            
+        # self.Base.Base_Model.save_weights( 
+        #     f"{self.log_name}/{score}_{name}.h5")
 
         # TODO: Does this matter?
         # log saved model arguments to file
@@ -182,12 +188,23 @@ class CustomAgent:
     
     def load(self, folder, name):
         # load keras model weights
-        self.Base.Base_Model.load_weights(os.path.join(folder, f"{name}.h5"))
+        # self.Base.Base_Model.load_weights(os.path.join(folder, f"{name}.h5"))
+        files = os.listdir(folder)
+        models = []
+        for file in files:
+            if name in file:
+                models.append(file)
+        models.sort()
+        print(f"################# {models}")
+        for i, model in enumerate(models[:-1]):
+            self.Base.models[i]['model'] = load_model(f"{folder}/{model}", custom_objects={"ppo_loss": self.Base.ppo_loss})
+        self.Base.Base_Model = load_model(f"{folder}/{models[-1]}", custom_objects={"ppo_loss": self.Base.ppo_loss})
+        
 
 
 class CustomEnv:
     # A custom Bitcoin trading environment
-    def __init__(self, df, initial_balance=1000, lookback_window_size=50, Render_range=100, Show_reward=False, Show_indicators=False, normalize_value=40000, indicator_index='MACD_1', OHCL=0):
+    def __init__(self, df, initial_balance=1000, lookback_window_size=50, Render_range=100, Show_reward=False, Show_indicators=False, normalize_value=40000, indicators=[], OHCL=0):
         # Define action space and state size and other custom parameters
         self.df = df.dropna().reset_index()
         self.df_total_steps = len(self.df) - 1
@@ -209,7 +226,7 @@ class CustomEnv:
 
         self.normalize_value = normalize_value
         self.OHCL = OHCL
-        self.indicator_index = indicator_index
+        self.indicators = indicators
         self.indicator_indexes = {
             'MACD_1': 400,
             'MACD_4': 100,
@@ -270,11 +287,12 @@ class CustomEnv:
             current_step = self.current_step - i
             self.orders_history.append(
                 [self.balance, self.net_worth, self.crypto_bought, self.crypto_sold, self.crypto_held])
-
-            self.indicators_history.append(
-                [
-                    self.df.loc[current_step, self.indicator_index]/self.indicator_indexes[self.indicator_index],
-                 ])
+            
+            for indicator in self.indicators:
+                self.indicators_history.append(
+                    [
+                        self.df.loc[current_step, indicator]/self.indicator_indexes[indicator],
+                    ])
             
             # TODO: these can be deleted
             if(self.OHCL==1):
@@ -299,10 +317,11 @@ class CustomEnv:
     # TODO: these can be deleted
     # Get the data points for the given current_step
     def _next_observation(self):
-        self.indicators_history.append( 
-                [
-                    self.df.loc[self.current_step, self.indicator_index]/self.indicator_indexes[self.indicator_index]
-                 ])
+        for indicator in self.indicators:
+                self.indicators_history.append(
+                    [
+                        self.df.loc[self.current_step, indicator]/self.indicator_indexes[indicator],
+                    ])
 
         if(self.OHCL==1):
             self.market_history.append([self.df.loc[self.current_step, 'Open'],
@@ -507,7 +526,7 @@ def test_agent(envs, agent, visualize=True, test_episodes=10, folder="", name="C
 if __name__ == "__main__":
 
     ## Reading a time-based dataframe with/without indicators
-    df = pd.read_csv('./Binance_BTCUSDT_1h_Base_MACD_PSAR_ATR_BB_ADX_RSI_ICHI_KC_Cnst_Interpolated.csv')  # [::-1]
+    df = pd.read_csv('./Binance_BTCUSDT_ALL_INDCTRS_4H_2019.csv')  # [::-1]
     #df = df.sort_values('Date').reset_index(drop=True)
     #df = AddIndicators(df)  # insert indicators to df
     #df = df.round(2)   # two digit precision
@@ -520,22 +539,25 @@ if __name__ == "__main__":
     train_df = df[:-test_window-lookback_window_size]
     agent = CustomAgent(lookback_window_size=lookback_window_size,
                         learning_rate=0.0001, epochs=5, optimizer=Adam, batch_size=24
-                                                        , models=['CNN_1','CNN_2'], state_size=[1, 1, 1])
+                                                        , models=['B1000/episode_76860.00_Crypto_trader_Actor.h5'], state_size=[1, 1, 1])
 
-    train_env1 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
-    train_env2 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
+    #train_env1 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
+    #train_env2 = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
+    train_env = CustomEnv(train_df, lookback_window_size=lookback_window_size, indicators=['macd_4h', 'williams_4h'])
 
-    train_envs = [train_env1, train_env2]
-    train_agent(train_envs, agent, visualize=False,
+
+    #train_envs = [train_env1, train_env2]
+
+    train_agent(train_env, agent, visualize=False,
               train_episodes=2000, training_batch_size=500)
     
     # agent.write_conditions()
     
     ## Testing Section:
-    # test_df = df[:-test_window]
-    # ic(test_df[['Open','Close']])   # Depicting the specified Time-period
+    test_df = df[:-test_window]
+    ic(test_df[['Open','Close']])   # Depicting the specified Time-period
     # test_env1 = CustomEnv(test_df, lookback_window_size=lookback_window_size, indicator_index='MACD_1')
     # test_env2 = CustomEnv(test_df, lookback_window_size=lookback_window_size, indicator_index='MACD_2')
     # test_agent([test_env1, test_env2], agent, visualize=True, test_episodes=100,
-    #            folder="2022_02_07_22_24_Crypto_trader", name="2349.45_Crypto_trader", comment="")
+    #            folder="2022_02_08_19_00_Crypto_trader", name="2272.15_Crypto_trader", comment="")
 
