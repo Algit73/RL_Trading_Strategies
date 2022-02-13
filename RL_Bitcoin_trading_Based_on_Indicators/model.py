@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Dense, Flatten, Conv1D, MaxPooling1D, LSTM, BatchNormalization, Dropout, Concatenate
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import plot_model
 from keras.layers.merge import concatenate
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.backend import dropout
@@ -19,9 +20,10 @@ if len(gpus) > 0:
     try: tf.config.experimental.set_memory_growth(gpus[0], True)
     except RuntimeError: pass
 class Base_CNN:
-    def __init__(self, input_shapes, action_space, learning_rate, optimizer, models = []):
+    def __init__(self, input_shapes, action_space, metalearner_action_space, learning_rate, optimizer, models = []):
 
         self.action_space = action_space
+        self.metalearner_action_space = metalearner_action_space
 
         models_list = {
             'CNN_1': self.gen_cnn_1,
@@ -33,12 +35,7 @@ class Base_CNN:
 
         for i, model in enumerate(models):
             sleep(1)
-            if '.h5' in model:
-                print("fond h5")
-                temp = self.load_actor_model(input_shape = tuple(input_shapes[i]), output = action_space, h5_file=model)
-                # temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
-                self.models.append({'model': temp, 'fit': True})
-            elif model not in models_list:
+            if model not in models_list:
                 self.models.append({'model': self.load_custom_model(model), 'fit': True})                
             else:
                 temp = models_list[model](input_shape = tuple(input_shapes[i]), output = action_space)
@@ -48,10 +45,11 @@ class Base_CNN:
         # merged_layer = concatenate(axis=1)([model.output for model in compiled_models])
         # merged_layer = Concatenate(axis=-1)([model.output for model in self.models])
         final_input = Input(shape=action_space * len(models))
-        final_layer = Dense(action_space, activation='softmax')(final_input)
-        self.Base_Model = Model(inputs = final_input, outputs = final_layer) 
+        layer_1 = Dense(10, activation='silu')(final_input)
+        final_layer = Dense(action_space, activation='softmax')(layer_1)
+        self.Base_Model = Model(inputs=final_input, outputs=final_layer)
         self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
-    
+        # plot_model(self.Base_Model, to_file="metalearner.png", show_shapes=True)
     
     def gen_cnn_1(self, input_shape, output, optimizer=Adam, learning_rate=0.00005):
         X_input = Input(input_shape)
@@ -82,26 +80,10 @@ class Base_CNN:
         temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
         return temp
 
-    def load_actor_model(self, input_shape, output, h5_file, optimizer=Adam, learning_rate=0.00005):
-        X_input = Input(input_shape)
-        A = Conv1D(filters=128, kernel_size=6, padding="same", activation="tanh")(X_input)
-        A = MaxPooling1D(pool_size=2)(A)
-        A = Conv1D(filters=64, kernel_size=6, padding="same", activation="tanh")(A)
-        A = MaxPooling1D(pool_size=2)(A)
-        A = Conv1D(filters=32, kernel_size=3, padding="same", activation="tanh")(A)
-        A = MaxPooling1D(pool_size=2)(A)
-        A = Flatten()(A)
-        output = Dense(self.action_space, activation="softmax")(A) # A --> X
-        temp = Model(inputs = X_input, outputs = output)
-        temp.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
-        temp.load_weights(h5_file)
-        return temp
-    
     def load_custom_model(self, input_file):
         if not isfile(input_file):
             raise Exception(f'file {input_file} doesn\'t exists')
-        print("#############", input_file)
-        return load_model(input_file)
+        return load_model(input_file, custom_objects={'ppo_loss': self.ppo_loss})
 
     def fit(self, inputs, target, epochs, verbose=0, shuffle=True, batch_size=64):
         inputs = np.array(inputs)
@@ -109,12 +91,14 @@ class Base_CNN:
             # print(f'fittin model {i} of {len(self.models)}')
             if not model['fit']:
                 model['model'].fit(inputs[i], target, epochs=epochs, verbose=verbose, shuffle=shuffle, batch_size=batch_size)
-        temp_output = np.empty((inputs.shape[1], 0))
+
+        temp_output = np.empty([inputs.shape[-3], 0])
         for i,model in enumerate(self.models):
             temp_output = np.append(temp_output, model['model'].predict(inputs[i]), axis=1)
+        # target = target[:2000,:2]
         return self.Base_Model.fit(temp_output, target, epochs=epochs, verbose=verbose, shuffle=shuffle, batch_size=batch_size)
-        
-        
+
+
     def ppo_loss(self, y_true, y_pred):
         # Defined in https://arxiv.org/abs/1707.06347
         advantages, prediction_picks, actions = y_true[:, :1], y_true[:, 1:1+self.action_space], y_true[:, 1+self.action_space:]
@@ -344,6 +328,9 @@ class Critic_Model:
     def critic_PPO2_loss(self, y_true, y_pred):
         value_loss = K.mean((y_true - y_pred) ** 2) # standard PPO loss
         return value_loss
+    
+    def load(self, h5_file):
+        self.Critic = load_model(h5_file, custom_objects={'critic_PPO2_loss': self.critic_PPO2_loss})
 
     def critic_predict(self, state):
         # return self.Critic.predict([state, np.zeros((state.shape[0], 1))])
