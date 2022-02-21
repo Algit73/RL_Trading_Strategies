@@ -45,7 +45,7 @@ class Base_CNN:
         # merged_layer = concatenate(axis=1)([model.output for model in compiled_models])
         # merged_layer = Concatenate(axis=-1)([model.output for model in self.models])
         final_input = Input(shape=action_space * len(models))
-        layer_1 = Dense(10, activation='silu')(final_input)
+        layer_1 = Dense(10, activation='softmax')(final_input)
         final_layer = Dense(action_space, activation='softmax')(layer_1)
         self.Base_Model = Model(inputs=final_input, outputs=final_layer)
         self.Base_Model.compile(loss=self.ppo_loss, optimizer=optimizer(learning_rate=learning_rate))
